@@ -37,8 +37,15 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
 
   // Form inputs
   const [name, setName] = useState(initialEditingShop ? initialEditingShop.name : '');
-  const [floor, setFloor] = useState(initialEditingShop ? initialEditingShop.floor : MULTIPLAN_FLOORS[0]);
-  const [customFloor, setCustomFloor] = useState('');
+  // Selected floors can be multiple, e.g. ["2nd Floor", "5th Floor", "9th Floor"]
+  const [selectedFloors, setSelectedFloors] = useState<string[]>(() => {
+    if (!initialEditingShop) return [MULTIPLAN_FLOORS[0]];
+    const parts = initialEditingShop.floor
+      ? initialEditingShop.floor.split(/[,&/]+/).map((s) => s.trim()).filter(Boolean)
+      : [];
+    return parts.length > 0 ? parts : [MULTIPLAN_FLOORS[0]];
+  });
+  const [customFloorInput, setCustomFloorInput] = useState('');
   const [shopNumber, setShopNumber] = useState(initialEditingShop ? initialEditingShop.shop_number : '');
   const [phone, setPhone] = useState(initialEditingShop ? initialEditingShop.phone || '' : '');
   const [logo, setLogo] = useState(initialEditingShop ? initialEditingShop.logo || '' : '');
@@ -56,8 +63,8 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
 
   const resetForm = () => {
     setName('');
-    setFloor(MULTIPLAN_FLOORS[0]);
-    setCustomFloor('');
+    setSelectedFloors([MULTIPLAN_FLOORS[0]]);
+    setCustomFloorInput('');
     setShopNumber('');
     setPhone('');
     setLogo('');
@@ -75,19 +82,43 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
   const handleOpenEdit = (shop: Shop) => {
     setEditingShop(shop);
     setName(shop.name);
-    if (MULTIPLAN_FLOORS.includes(shop.floor as any)) {
-      setFloor(shop.floor);
-      setCustomFloor('');
-    } else {
-      setFloor('Other');
-      setCustomFloor(shop.floor);
-    }
+    const parts = (shop.floor || '')
+      .split(/[,&/]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setSelectedFloors(parts.length > 0 ? parts : [MULTIPLAN_FLOORS[0]]);
+    setCustomFloorInput('');
     setShopNumber(shop.shop_number);
     setPhone(shop.phone || '');
     setLogo(shop.logo || '');
     setNotes(shop.notes || '');
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggleFloor = (floorItem: string) => {
+    setSelectedFloors((prev) => {
+      if (prev.includes(floorItem)) {
+        if (prev.length === 1) return prev; // Keep at least one
+        return prev.filter((f) => f !== floorItem);
+      } else {
+        return [...prev, floorItem];
+      }
+    });
+  };
+
+  const handleAddCustomFloor = () => {
+    const trimmed = customFloorInput.trim();
+    if (!trimmed) return;
+    if (!selectedFloors.includes(trimmed)) {
+      setSelectedFloors((prev) => [...prev, trimmed]);
+    }
+    setCustomFloorInput('');
+  };
+
+  const handleRemoveFloor = (floorItem: string) => {
+    if (selectedFloors.length <= 1) return;
+    setSelectedFloors((prev) => prev.filter((f) => f !== floorItem));
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,9 +142,9 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
       alert('Shop Number is required.');
       return;
     }
-    const finalFloor = floor === 'Other' ? customFloor.trim() : floor;
+    const finalFloor = selectedFloors.filter(Boolean).join(', ');
     if (!finalFloor) {
-      alert('Floor / Level is required.');
+      alert('At least one floor / level is required.');
       return;
     }
 
@@ -280,38 +311,93 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
                 />
               </div>
 
-              {/* Level / Floor */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-                  Level / Floor *
-                </label>
-                <select
-                  value={floor}
-                  onChange={(e) => setFloor(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
-                >
-                  {MULTIPLAN_FLOORS.map((f) => (
-                    <option key={f} value={f}>
-                      {f}
-                    </option>
-                  ))}
-                  <option value="Other">Other Floor...</option>
-                </select>
+              {/* Level / Floors (Multiple selection supported) */}
+              <div className="md:col-span-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider">
+                    Level / Floor(s) * <span className="text-neutral-500 font-normal lowercase">(Select one or multiple floors)</span>
+                  </label>
+                  <span className="text-xs text-emerald-400 font-medium">
+                    {selectedFloors.length} {selectedFloors.length === 1 ? 'Floor selected' : 'Floors selected'}
+                  </span>
+                </div>
 
-                {floor === 'Other' && (
+                {/* Selected Floor Badges */}
+                <div className="flex flex-wrap items-center gap-1.5 p-2 bg-neutral-950 border border-neutral-800 rounded-lg min-h-[44px]">
+                  {selectedFloors.map((fl) => (
+                    <span
+                      key={fl}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60"
+                    >
+                      <span>{fl}</span>
+                      {selectedFloors.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFloor(fl)}
+                          className="hover:text-white transition-colors cursor-pointer"
+                          title="Remove floor"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Quick Toggle Pills for all 16 Floors */}
+                <div className="mt-2.5">
+                  <div className="text-[11px] text-neutral-400 mb-1.5 font-medium">
+                    Click to toggle floors:
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-neutral-950/50 rounded-lg border border-neutral-800/80">
+                    {MULTIPLAN_FLOORS.map((f) => {
+                      const isSelected = selectedFloors.includes(f);
+                      return (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => toggleFloor(f)}
+                          className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-600 text-white font-semibold shadow-sm'
+                              : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border border-neutral-800'
+                          }`}
+                        >
+                          {isSelected ? `✓ ${f}` : `+ ${f}`}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Add Custom / Other Floor */}
+                <div className="mt-2.5 flex items-center gap-2">
                   <input
                     type="text"
-                    value={customFloor}
-                    onChange={(e) => setCustomFloor(e.target.value)}
-                    placeholder="Enter floor name, e.g. Basement 1, Mezzanine"
-                    required
-                    className="w-full mt-2 px-3.5 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
+                    value={customFloorInput}
+                    onChange={(e) => setCustomFloorInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomFloor();
+                      }
+                    }}
+                    placeholder="Add other floor (e.g. Basement 1, Mezzanine)..."
+                    className="flex-1 px-3 py-1.5 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-xs placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                   />
-                )}
+                  <button
+                    type="button"
+                    onClick={handleAddCustomFloor}
+                    disabled={!customFloorInput.trim()}
+                    className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 text-neutral-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    + Add Floor
+                  </button>
+                </div>
               </div>
 
               {/* Phone Number */}
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
                   Phone Number (Optional)
                 </label>
@@ -473,8 +559,17 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
                     <td className="py-3.5 px-4 whitespace-nowrap font-medium text-neutral-200">
                       {shop.shop_number}
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap text-neutral-300">
-                      {shop.floor}
+                    <td className="py-3.5 px-4 text-neutral-300">
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {shop.floor.split(/[,&/]+/).map((f) => f.trim()).filter(Boolean).map((f) => (
+                          <span
+                            key={f}
+                            className="inline-block px-1.5 py-0.5 rounded text-[11px] bg-neutral-800 text-neutral-300 border border-neutral-700/60"
+                          >
+                            {f}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap text-neutral-400 text-xs">
                       {shop.phone || '—'}

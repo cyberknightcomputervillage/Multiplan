@@ -228,9 +228,11 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 Multiplan Center
               </span>
-              <span className="text-xs text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded">
-                Floor: {shop.floor}
-              </span>
+              {shop.floor.split(/[,&/]+/).map((f) => f.trim()).filter(Boolean).map((f) => (
+                <span key={f} className="text-xs text-neutral-300 bg-neutral-800 border border-neutral-700/80 px-2 py-0.5 rounded">
+                  {f}
+                </span>
+              ))}
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1.5">

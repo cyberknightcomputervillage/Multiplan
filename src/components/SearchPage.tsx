@@ -45,7 +45,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by shop name, number, phone... (e.g. 'computer', '512', 'world', '9th')"
+            placeholder="Search by shop name, number, phone... (e.g. 'mr', 'M.R', 'computer', '512')"
             autoFocus
             className="w-full pl-12 pr-10 py-3.5 bg-neutral-950/80 border border-neutral-700/80 rounded-lg text-white text-base placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner"
           />
@@ -73,7 +73,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
           </div>
           {searchQuery && (
             <span className="text-neutral-500 italic">
-              Typo tolerance active (handles spelling mistakes like &quot;computr&quot;, &quot;compter&quot;)
+              Case &amp; dot/punctuation insensitive, typo-tolerant (e.g. &quot;mr&quot; finds &quot;M.R&quot;, &quot;computr&quot; finds &quot;Computer&quot;)
             </span>
           )}
         </div>
