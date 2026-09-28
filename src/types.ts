@@ -15,6 +15,8 @@ export type TransactionType = 'Purchase' | 'Sale';
 export interface ShopTransaction {
   id: string;
   shop_id: string;
+  user_id: string;
+  user_email: string;
   date: string; // YYYY-MM-DD
   type: TransactionType;
   product_name: string;

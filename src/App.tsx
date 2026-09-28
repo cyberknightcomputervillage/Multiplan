@@ -9,7 +9,8 @@ import {
   AlertCircle,
   LogOut,
   User as UserIcon,
-  Trash
+  ShieldCheck,
+  Lock
 } from 'lucide-react';
 import { User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
@@ -19,6 +20,11 @@ import { SearchPage } from './components/SearchPage';
 import { ShopDetailsPage } from './components/ShopDetailsPage';
 import { StoreInfoPage } from './components/StoreInfoPage';
 import { AuthModal } from './components/AuthModal';
+import { 
+  AdminPasswordGate, 
+  isLocalAdminAuthenticated, 
+  clearLocalAdminAuthenticated 
+} from './components/AdminPasswordGate';
 
 type NavTab = 'search' | 'store_info';
 
@@ -27,6 +33,10 @@ export default function App() {
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Admin access state
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => isLocalAdminAuthenticated());
+  const [showAdminLogin, setShowAdminLogin] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<NavTab>('search');
   const [shops, setShops] = useState<Shop[]>([]);
@@ -40,6 +50,30 @@ export default function App() {
   const [editingShopFromDetails, setEditingShopFromDetails] = useState<Shop | null>(null);
 
   const [showAboutModal, setShowAboutModal] = useState(false);
+
+  // Listen to browser URL path or hash (/admin or #admin)
+  useEffect(() => {
+    const checkAdminRoute = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path.includes('/admin') || hash === '#admin') {
+        if (isLocalAdminAuthenticated()) {
+          setIsAdmin(true);
+          setActiveTab('store_info');
+        } else {
+          setShowAdminLogin(true);
+        }
+      }
+    };
+
+    checkAdminRoute();
+    window.addEventListener('popstate', checkAdminRoute);
+    window.addEventListener('hashchange', checkAdminRoute);
+    return () => {
+      window.removeEventListener('popstate', checkAdminRoute);
+      window.removeEventListener('hashchange', checkAdminRoute);
+    };
+  }, []);
 
   // Listen to Firebase Auth state
   useEffect(() => {
@@ -58,7 +92,6 @@ export default function App() {
       await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
       console.error('Google Sign In error:', err);
-      // Give readable feedback
       if (err.code === 'auth/popup-closed-by-user') {
         setAuthError('Sign in popup was closed. Please try again.');
       } else if (err.code === 'auth/popup-blocked') {
@@ -73,10 +106,26 @@ export default function App() {
 
   const handleSignOut = async () => {
     try {
+      clearLocalAdminAuthenticated();
+      setIsAdmin(false);
+      setShowAdminLogin(false);
       await signOut(auth);
       setSelectedShop(null);
     } catch (err: any) {
       console.error('Sign out error:', err);
+    }
+  };
+
+  const handleExitAdmin = () => {
+    clearLocalAdminAuthenticated();
+    setIsAdmin(false);
+    setShowAdminLogin(false);
+    setActiveTab('search');
+    // Clean URL if #admin or /admin
+    if (window.location.hash === '#admin') {
+      window.history.pushState(null, '', window.location.pathname);
+    } else if (window.location.pathname.includes('/admin')) {
+      window.history.pushState(null, '', '/');
     }
   };
 
@@ -89,7 +138,6 @@ export default function App() {
       const data = await fetchShops();
       setShops(data);
 
-      // If a shop was currently selected, refresh its object reference
       if (selectedShop) {
         const updated = data.find((s) => s.id === selectedShop.id);
         if (updated) setSelectedShop(updated);
@@ -118,6 +166,10 @@ export default function App() {
   };
 
   const handleEditShopFromDetails = (shop: Shop) => {
+    if (!isAdmin) {
+      setShowAdminLogin(true);
+      return;
+    }
     setEditingShopFromDetails(shop);
     setSelectedShop(null);
     setActiveTab('store_info');
@@ -153,6 +205,7 @@ export default function App() {
           <div 
             onClick={() => {
               setSelectedShop(null);
+              setShowAdminLogin(false);
               setActiveTab('search');
             }}
             className="flex items-center gap-3 cursor-pointer group"
@@ -166,6 +219,11 @@ export default function App() {
                 <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
                   Dhaka
                 </span>
+                {isAdmin && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    Admin Active
+                  </span>
+                )}
               </div>
               <div className="text-xs text-neutral-400 flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-emerald-400" />
@@ -174,16 +232,17 @@ export default function App() {
             </div>
           </div>
 
-          {/* Clean Main Nav (Only 1. Search Shops, 2. Store Information) */}
+          {/* Clean Main Nav */}
           <div className="flex items-center gap-1 sm:gap-2">
             <nav className="flex items-center p-1 bg-neutral-950/80 rounded-lg border border-neutral-800">
               <button
                 onClick={() => {
                   setSelectedShop(null);
+                  setShowAdminLogin(false);
                   setActiveTab('search');
                 }}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  activeTab === 'search' && !selectedShop
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
+                  activeTab === 'search' && !selectedShop && !showAdminLogin
                     ? 'bg-neutral-800 text-white shadow-sm font-semibold'
                     : 'text-neutral-400 hover:text-neutral-200'
                 }`}
@@ -192,30 +251,57 @@ export default function App() {
                 <span>Search Shops</span>
               </button>
 
-              <button
-                onClick={() => {
-                  setSelectedShop(null);
-                  setActiveTab('store_info');
-                }}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  activeTab === 'store_info'
-                    ? 'bg-neutral-800 text-white shadow-sm font-semibold'
-                    : 'text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                <Store className="w-4 h-4" />
-                <span>Store Information</span>
-              </button>
+              {/* Store Information: Available to admin, or password prompt to unlock */}
+              {isAdmin ? (
+                <button
+                  onClick={() => {
+                    setSelectedShop(null);
+                    setShowAdminLogin(false);
+                    setActiveTab('store_info');
+                  }}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
+                    activeTab === 'store_info' && !selectedShop
+                      ? 'bg-neutral-800 text-white shadow-sm font-semibold'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  <Store className="w-4 h-4 text-amber-400" />
+                  <span>Store Information</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setSelectedShop(null);
+                    setShowAdminLogin(true);
+                  }}
+                  className="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium text-neutral-500 hover:text-neutral-300 transition-all cursor-pointer"
+                  title="Admin password required to manage shops"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Admin</span>
+                </button>
+              )}
             </nav>
 
             {/* Subtle About / info toggle */}
             <button
               onClick={() => setShowAboutModal(true)}
-              className="p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
+              className="p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
               title="About this directory"
             >
               <Info className="w-4 h-4" />
             </button>
+
+            {/* Admin Exit Button if logged in as admin */}
+            {isAdmin && (
+              <button
+                onClick={handleExitAdmin}
+                className="px-2.5 py-1 text-xs font-semibold rounded bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-700/50 transition-colors cursor-pointer"
+                title="Lock admin session"
+              >
+                Exit Admin
+              </button>
+            )}
 
             {/* User Profile & Sign Out */}
             <div className="flex items-center pl-2 ml-1 border-l border-neutral-800 gap-2">
@@ -237,7 +323,7 @@ export default function App() {
 
               <button
                 onClick={handleSignOut}
-                className="p-1.5 text-neutral-400 hover:text-red-400 rounded-lg hover:bg-neutral-800 transition-colors"
+                className="p-1.5 text-neutral-400 hover:text-red-400 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
                 title="Sign out"
               >
                 <LogOut className="w-4 h-4" />
@@ -257,7 +343,7 @@ export default function App() {
             </div>
             <button
               onClick={loadShops}
-              className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-900/60 hover:bg-red-800 text-xs font-semibold rounded transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-900/60 hover:bg-red-800 text-xs font-semibold rounded transition-colors cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Retry
@@ -271,24 +357,46 @@ export default function App() {
             <p className="text-white font-medium text-base">Loading Multiplan Center Directory...</p>
             <p className="text-xs text-neutral-500 mt-1">Connecting to database</p>
           </div>
+        ) : showAdminLogin ? (
+          /* Admin Password Prompt */
+          <AdminPasswordGate
+            onSuccess={() => {
+              setIsAdmin(true);
+              setShowAdminLogin(false);
+              setActiveTab('store_info');
+            }}
+            onCancel={() => {
+              setShowAdminLogin(false);
+              setActiveTab('search');
+            }}
+          />
         ) : (
           <>
             {/* View 1: Shop Details Page */}
             {selectedShop ? (
               <ShopDetailsPage
                 shop={selectedShop}
+                currentUser={currentUser}
+                isAdmin={isAdmin}
                 onBack={handleBackToSearch}
                 onEditShop={handleEditShopFromDetails}
               />
             ) : activeTab === 'search' ? (
-              /* View 2: Search Page (Default) */
+              /* View 2: Search Page (Default for all users) */
               <SearchPage
                 shops={shops}
+                isAdmin={isAdmin}
                 onSelectShop={handleSelectShop}
-                onNavigateToStoreInfo={() => setActiveTab('store_info')}
+                onNavigateToStoreInfo={() => {
+                  if (isAdmin) {
+                    setActiveTab('store_info');
+                  } else {
+                    setShowAdminLogin(true);
+                  }
+                }}
               />
-            ) : (
-              /* View 3: Store Information Page */
+            ) : isAdmin ? (
+              /* View 3: Store Information Page (Only for authenticated admin) */
               <StoreInfoPage
                 shops={shops}
                 onRefreshShops={loadShops}
@@ -297,6 +405,16 @@ export default function App() {
                 }}
                 initialEditingShop={editingShopFromDetails}
                 onClearInitialEditingShop={() => setEditingShopFromDetails(null)}
+              />
+            ) : (
+              <AdminPasswordGate
+                onSuccess={() => {
+                  setIsAdmin(true);
+                  setActiveTab('store_info');
+                }}
+                onCancel={() => {
+                  setActiveTab('search');
+                }}
               />
             )}
           </>
@@ -309,7 +427,7 @@ export default function App() {
           <span>Multiplan Center (ECS Computer City), New Elephant Road, Dhaka-1205 · 16 Floors Total</span>
           <div className="flex items-center gap-3">
             <span>Logged in as: <strong className="text-neutral-300 font-medium">{currentUser.email}</strong></span>
-            {shops.length > 0 && (
+            {isAdmin && shops.length > 0 && (
               <button
                 onClick={async () => {
                   if (confirm('Clear all existing shops and start completely empty?')) {
@@ -345,12 +463,9 @@ export default function App() {
                 A clean, dedicated personal business tool for finding shops inside Multiplan Center and tracking purchase/sales transactions.
               </p>
               <div className="bg-neutral-950 p-3 rounded border border-neutral-800 space-y-1.5">
-                <div className="font-semibold text-white">Key Features:</div>
-                <div>• Typo-tolerant search across shop name, shop number, floor, &amp; phone.</div>
-                <div>• 16 full floors supported (Ground Floor through 16th Floor).</div>
-                <div>• Pure custom directory: starts empty until you input shops.</div>
-                <div>• Full purchase and sales transaction history with unit price &amp; total calculation.</div>
-                <div>• Protected by Google Authentication.</div>
+                <div className="font-semibold text-white">Role Access:</div>
+                <div>• <strong>Admin Panel (/admin)</strong>: Password-protected (`cyberknight`) for managing store records across all 16 floors.</div>
+                <div>• <strong>General Users</strong>: Search directory &amp; manage their own private purchase and sale records tied directly to their Google account.</div>
               </div>
             </div>
 
@@ -368,3 +483,4 @@ export default function App() {
     </div>
   );
 }
+

@@ -5,12 +5,14 @@ import { fuzzySearchShops } from '../fuzzySearch';
 
 interface SearchPageProps {
   shops: Shop[];
+  isAdmin: boolean;
   onSelectShop: (shop: Shop) => void;
   onNavigateToStoreInfo: () => void;
 }
 
 export const SearchPage: React.FC<SearchPageProps> = ({
   shops,
+  isAdmin,
   onSelectShop,
   onNavigateToStoreInfo,
 }) => {
@@ -86,15 +88,19 @@ export const SearchPage: React.FC<SearchPageProps> = ({
           </h3>
           <p className="text-sm text-neutral-400 mt-1 max-w-md mx-auto">
             {shops.length === 0
-              ? 'The directory is completely empty. Start by adding your first Multiplan Center shop.'
-              : `No shops matched "${searchQuery}". You can add this shop anytime.`}
+              ? (isAdmin 
+                  ? 'The directory is completely empty. Start by adding your first Multiplan Center shop.' 
+                  : 'The directory is currently empty. Shops will appear here once added by the administrator.')
+              : `No shops matched "${searchQuery}".`}
           </p>
-          <button
-            onClick={onNavigateToStoreInfo}
-            className="mt-5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            Add New Shop
-          </button>
+          {isAdmin && (
+            <button
+              onClick={onNavigateToStoreInfo}
+              className="mt-5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+            >
+              Add New Shop
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

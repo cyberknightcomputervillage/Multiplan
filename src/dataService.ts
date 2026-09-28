@@ -97,11 +97,22 @@ export async function deleteShopWithTransactions(shopId: string): Promise<void> 
   }
 }
 
-export async function fetchTransactionsForShop(shopId: string): Promise<ShopTransaction[]> {
-  const q = query(
-    collection(db, TRANSACTIONS_COLLECTION), 
-    where('shop_id', '==', shopId)
-  );
+export async function fetchTransactionsForShop(
+  shopId: string, 
+  userId?: string
+): Promise<ShopTransaction[]> {
+  // If userId is provided, filter by shop_id and user_id so users only see their own transactions
+  const q = userId
+    ? query(
+        collection(db, TRANSACTIONS_COLLECTION),
+        where('shop_id', '==', shopId),
+        where('user_id', '==', userId)
+      )
+    : query(
+        collection(db, TRANSACTIONS_COLLECTION),
+        where('shop_id', '==', shopId)
+      );
+
   const snap = await getDocs(q);
   const results: ShopTransaction[] = [];
   snap.forEach((docSnap) => {
@@ -109,6 +120,8 @@ export async function fetchTransactionsForShop(shopId: string): Promise<ShopTran
     results.push({
       id: docSnap.id,
       shop_id: data.shop_id,
+      user_id: data.user_id || '',
+      user_email: data.user_email || '',
       date: data.date,
       type: data.type,
       product_name: data.product_name,
@@ -135,6 +148,8 @@ export async function createTransaction(
   const now = Date.now();
   const docRef = await addDoc(collection(db, TRANSACTIONS_COLLECTION), {
     shop_id: data.shop_id,
+    user_id: data.user_id,
+    user_email: data.user_email,
     date: data.date,
     type: data.type,
     product_name: data.product_name.trim(),
@@ -148,6 +163,8 @@ export async function createTransaction(
   return {
     id: docRef.id,
     shop_id: data.shop_id,
+    user_id: data.user_id,
+    user_email: data.user_email,
     date: data.date,
     type: data.type,
     product_name: data.product_name.trim(),
