@@ -129,11 +129,26 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                     <h3 className="text-base font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">
                       {shop.name}
                     </h3>
-                    <div className="flex items-center gap-1.5 text-xs text-neutral-300 mt-1 font-medium">
-                      <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                      <span className="truncate">
-                        Shop {shop.shop_number} · {shop.floor}
-                      </span>
+                    <div className="text-xs text-neutral-300 mt-1 font-medium space-y-1">
+                      {shop.floor_locations && shop.floor_locations.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {shop.floor_locations.map((loc, i) => (
+                            <div key={i} className="flex items-center gap-1.5 text-xs text-neutral-300">
+                              <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                              <span className="truncate">
+                                <strong className="text-white font-semibold">{loc.floor}:</strong> Shop {loc.shop_number}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-xs text-neutral-300">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                          <span className="truncate">
+                            Shop {shop.shop_number} · {shop.floor}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {shop.phone && (

@@ -31,6 +31,7 @@ export async function fetchShops(): Promise<Shop[]> {
       name: data.name || '',
       shop_number: data.shop_number || '',
       floor: data.floor || '',
+      floor_locations: Array.isArray(data.floor_locations) ? data.floor_locations : undefined,
       phone: data.phone || '',
       logo: data.logo || '',
       notes: data.notes || '',
@@ -45,7 +46,7 @@ export async function fetchShops(): Promise<Shop[]> {
 export async function createShop(data: Omit<Shop, 'id' | 'created_at' | 'updated_at'>): Promise<Shop> {
   const colRef = collection(db, SHOPS_COLLECTION);
   const now = Date.now();
-  const docRef = await addDoc(colRef, {
+  const payload: any = {
     name: data.name.trim(),
     shop_number: data.shop_number.trim(),
     floor: data.floor.trim(),
@@ -54,13 +55,19 @@ export async function createShop(data: Omit<Shop, 'id' | 'created_at' | 'updated
     notes: (data.notes || '').trim(),
     created_at: now,
     updated_at: now,
-  });
+  };
+  if (data.floor_locations && data.floor_locations.length > 0) {
+    payload.floor_locations = data.floor_locations;
+  }
+
+  const docRef = await addDoc(colRef, payload);
 
   return {
     id: docRef.id,
     name: data.name.trim(),
     shop_number: data.shop_number.trim(),
     floor: data.floor.trim(),
+    floor_locations: data.floor_locations,
     phone: (data.phone || '').trim(),
     logo: data.logo || '',
     notes: (data.notes || '').trim(),

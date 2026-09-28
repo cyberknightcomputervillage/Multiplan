@@ -147,11 +147,26 @@ export function fuzzySearchShops(shops: Shop[], query: string): Shop[] {
     const nameNorm = normalize(shop.name);
     const nameCompact = compactAlphanumeric(shop.name);
 
-    const shopNumNorm = normalize(shop.shop_number);
-    const shopNumCompact = compactAlphanumeric(shop.shop_number);
+    // Collect all shop numbers (main + any in floor_locations)
+    const allShopNumbers: string[] = [shop.shop_number];
+    const allFloors: string[] = [shop.floor];
 
-    const floorNorm = normalize(shop.floor);
-    const floorCompact = compactAlphanumeric(shop.floor);
+    if (shop.floor_locations && shop.floor_locations.length > 0) {
+      for (const loc of shop.floor_locations) {
+        if (loc.shop_number && !allShopNumbers.includes(loc.shop_number)) {
+          allShopNumbers.push(loc.shop_number);
+        }
+        if (loc.floor && !allFloors.includes(loc.floor)) {
+          allFloors.push(loc.floor);
+        }
+      }
+    }
+
+    const shopNumNorm = normalize(allShopNumbers.join(' '));
+    const shopNumCompact = compactAlphanumeric(allShopNumbers.join(' '));
+
+    const floorNorm = normalize(allFloors.join(' '));
+    const floorCompact = compactAlphanumeric(allFloors.join(' '));
 
     const phoneNorm = normalize(shop.phone || '');
     const phoneDigits = (shop.phone || '').replace(/\D/g, '');

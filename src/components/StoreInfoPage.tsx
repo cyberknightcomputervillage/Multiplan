@@ -12,7 +12,7 @@ import {
   MapPin,
   CheckCircle2
 } from 'lucide-react';
-import { Shop, MULTIPLAN_FLOORS } from '../types';
+import { Shop, FloorLocation, MULTIPLAN_FLOORS } from '../types';
 import { createShop, updateShop, deleteShopWithTransactions } from '../dataService';
 import { processImageUpload } from '../imageUtils';
 
@@ -37,16 +37,33 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
 
   // Form inputs
   const [name, setName] = useState(initialEditingShop ? initialEditingShop.name : '');
-  // Selected floors can be multiple, e.g. ["2nd Floor", "5th Floor", "9th Floor"]
-  const [selectedFloors, setSelectedFloors] = useState<string[]>(() => {
-    if (!initialEditingShop) return [MULTIPLAN_FLOORS[0]];
-    const parts = initialEditingShop.floor
-      ? initialEditingShop.floor.split(/[,&/]+/).map((s) => s.trim()).filter(Boolean)
-      : [];
-    return parts.length > 0 ? parts : [MULTIPLAN_FLOORS[0]];
+
+  // Floor Locations list: each entry has a floor and a specific shop number
+  const [floorLocations, setFloorLocations] = useState<FloorLocation[]>(() => {
+    if (initialEditingShop) {
+      if (initialEditingShop.floor_locations && initialEditingShop.floor_locations.length > 0) {
+        return initialEditingShop.floor_locations;
+      }
+      // Parse legacy single/multiple floors
+      const flParts = (initialEditingShop.floor || '')
+        .split(/[,&/]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const shParts = (initialEditingShop.shop_number || '')
+        .split(/[,&/]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      if (flParts.length > 0) {
+        return flParts.map((fl, idx) => ({
+          floor: fl,
+          shop_number: shParts[idx] || shParts[0] || initialEditingShop.shop_number || '',
+        }));
+      }
+    }
+    return [{ floor: MULTIPLAN_FLOORS[0], shop_number: '' }];
   });
-  const [customFloorInput, setCustomFloorInput] = useState('');
-  const [shopNumber, setShopNumber] = useState(initialEditingShop ? initialEditingShop.shop_number : '');
+
   const [phone, setPhone] = useState(initialEditingShop ? initialEditingShop.phone || '' : '');
   const [logo, setLogo] = useState(initialEditingShop ? initialEditingShop.logo || '' : '');
   const [notes, setNotes] = useState(initialEditingShop ? initialEditingShop.notes || '' : '');
@@ -63,9 +80,7 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
 
   const resetForm = () => {
     setName('');
-    setSelectedFloors([MULTIPLAN_FLOORS[0]]);
-    setCustomFloorInput('');
-    setShopNumber('');
+    setFloorLocations([{ floor: MULTIPLAN_FLOORS[0], shop_number: '' }]);
     setPhone('');
     setLogo('');
     setNotes('');
@@ -82,13 +97,28 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
   const handleOpenEdit = (shop: Shop) => {
     setEditingShop(shop);
     setName(shop.name);
-    const parts = (shop.floor || '')
-      .split(/[,&/]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-    setSelectedFloors(parts.length > 0 ? parts : [MULTIPLAN_FLOORS[0]]);
-    setCustomFloorInput('');
-    setShopNumber(shop.shop_number);
+    if (shop.floor_locations && shop.floor_locations.length > 0) {
+      setFloorLocations(shop.floor_locations);
+    } else {
+      const flParts = (shop.floor || '')
+        .split(/[,&/]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const shParts = (shop.shop_number || '')
+        .split(/[,&/]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (flParts.length > 0) {
+        setFloorLocations(
+          flParts.map((fl, idx) => ({
+            floor: fl,
+            shop_number: shParts[idx] || shParts[0] || shop.shop_number || '',
+          }))
+        );
+      } else {
+        setFloorLocations([{ floor: MULTIPLAN_FLOORS[0], shop_number: shop.shop_number || '' }]);
+      }
+    }
     setPhone(shop.phone || '');
     setLogo(shop.logo || '');
     setNotes(shop.notes || '');
@@ -96,29 +126,22 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const toggleFloor = (floorItem: string) => {
-    setSelectedFloors((prev) => {
-      if (prev.includes(floorItem)) {
-        if (prev.length === 1) return prev; // Keep at least one
-        return prev.filter((f) => f !== floorItem);
-      } else {
-        return [...prev, floorItem];
-      }
-    });
+  const handleAddFloorLocation = () => {
+    // Pick the next unused floor from MULTIPLAN_FLOORS if available
+    const usedFloors = new Set(floorLocations.map((loc) => loc.floor));
+    const nextFloor = MULTIPLAN_FLOORS.find((f) => !usedFloors.has(f)) || MULTIPLAN_FLOORS[0];
+    setFloorLocations((prev) => [...prev, { floor: nextFloor, shop_number: '' }]);
   };
 
-  const handleAddCustomFloor = () => {
-    const trimmed = customFloorInput.trim();
-    if (!trimmed) return;
-    if (!selectedFloors.includes(trimmed)) {
-      setSelectedFloors((prev) => [...prev, trimmed]);
-    }
-    setCustomFloorInput('');
+  const handleRemoveFloorLocation = (index: number) => {
+    if (floorLocations.length <= 1) return;
+    setFloorLocations((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleRemoveFloor = (floorItem: string) => {
-    if (selectedFloors.length <= 1) return;
-    setSelectedFloors((prev) => prev.filter((f) => f !== floorItem));
+  const handleUpdateFloorLocation = (index: number, field: keyof FloorLocation, value: string) => {
+    setFloorLocations((prev) =>
+      prev.map((loc, i) => (i === index ? { ...loc, [field]: value } : loc))
+    );
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,23 +161,35 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
       alert('Shop Name is required.');
       return;
     }
-    if (!shopNumber.trim()) {
-      alert('Shop Number is required.');
+
+    // Validate floorLocations
+    const validLocations = floorLocations.map((loc) => ({
+      floor: loc.floor.trim(),
+      shop_number: loc.shop_number.trim(),
+    })).filter((loc) => loc.floor);
+
+    if (validLocations.length === 0) {
+      alert('At least one floor location is required.');
       return;
     }
-    const finalFloor = selectedFloors.filter(Boolean).join(', ');
-    if (!finalFloor) {
-      alert('At least one floor / level is required.');
+
+    const missingShopNum = validLocations.find((loc) => !loc.shop_number);
+    if (missingShopNum) {
+      alert(`Please enter a Shop Number for ${missingShopNum.floor}.`);
       return;
     }
+
+    const finalFloor = validLocations.map((loc) => loc.floor).join(', ');
+    const finalShopNumber = validLocations.map((loc) => loc.shop_number).join(', ');
 
     try {
       setIsSubmitting(true);
       if (editingShop) {
         await updateShop(editingShop.id, {
           name: name.trim(),
-          shop_number: shopNumber.trim(),
+          shop_number: finalShopNumber,
           floor: finalFloor,
+          floor_locations: validLocations,
           phone: phone.trim(),
           logo: logo,
           notes: notes.trim(),
@@ -165,7 +200,7 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
         const duplicate = shops.find(
           (s) =>
             s.name.toLowerCase() === name.trim().toLowerCase() &&
-            s.shop_number.toLowerCase() === shopNumber.trim().toLowerCase()
+            s.shop_number.toLowerCase() === finalShopNumber.toLowerCase()
         );
         if (duplicate) {
           if (!confirm(`A shop named "${duplicate.name}" at Shop ${duplicate.shop_number} already exists. Do you want to proceed anyway?`)) {
@@ -176,8 +211,9 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
 
         await createShop({
           name: name.trim(),
-          shop_number: shopNumber.trim(),
+          shop_number: finalShopNumber,
           floor: finalFloor,
+          floor_locations: validLocations,
           phone: phone.trim(),
           logo: logo,
           notes: notes.trim(),
@@ -282,7 +318,7 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Shop Name */}
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
                   Shop Name *
                 </label>
@@ -296,103 +332,78 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
                 />
               </div>
 
-              {/* Shop Number */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-                  Shop Number *
-                </label>
-                <input
-                  type="text"
-                  value={shopNumber}
-                  onChange={(e) => setShopNumber(e.target.value)}
-                  placeholder="e.g. 512, 513-514, 205, 5A"
-                  required
-                  className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Level / Floors (Multiple selection supported) */}
-              <div className="md:col-span-2">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider">
-                    Level / Floor(s) * <span className="text-neutral-500 font-normal lowercase">(Select one or multiple floors)</span>
-                  </label>
-                  <span className="text-xs text-emerald-400 font-medium">
-                    {selectedFloors.length} {selectedFloors.length === 1 ? 'Floor selected' : 'Floors selected'}
-                  </span>
-                </div>
-
-                {/* Selected Floor Badges */}
-                <div className="flex flex-wrap items-center gap-1.5 p-2 bg-neutral-950 border border-neutral-800 rounded-lg min-h-[44px]">
-                  {selectedFloors.map((fl) => (
-                    <span
-                      key={fl}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60"
-                    >
-                      <span>{fl}</span>
-                      {selectedFloors.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFloor(fl)}
-                          className="hover:text-white transition-colors cursor-pointer"
-                          title="Remove floor"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Quick Toggle Pills for all 16 Floors */}
-                <div className="mt-2.5">
-                  <div className="text-[11px] text-neutral-400 mb-1.5 font-medium">
-                    Click to toggle floors:
+              {/* Floor & Shop Number Locations (Multiple floors with individual shop numbers) */}
+              <div className="md:col-span-2 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider">
+                      Floor &amp; Shop Numbers *
+                    </label>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Select the floor and assign the specific shop number for that floor. Add more if the shop has multiple branches.
+                    </p>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-neutral-950/50 rounded-lg border border-neutral-800/80">
-                    {MULTIPLAN_FLOORS.map((f) => {
-                      const isSelected = selectedFloors.includes(f);
-                      return (
-                        <button
-                          key={f}
-                          type="button"
-                          onClick={() => toggleFloor(f)}
-                          className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
-                            isSelected
-                              ? 'bg-emerald-600 text-white font-semibold shadow-sm'
-                              : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border border-neutral-800'
-                          }`}
-                        >
-                          {isSelected ? `✓ ${f}` : `+ ${f}`}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Add Custom / Other Floor */}
-                <div className="mt-2.5 flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={customFloorInput}
-                    onChange={(e) => setCustomFloorInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddCustomFloor();
-                      }
-                    }}
-                    placeholder="Add other floor (e.g. Basement 1, Mezzanine)..."
-                    className="flex-1 px-3 py-1.5 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-xs placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
-                  />
                   <button
                     type="button"
-                    onClick={handleAddCustomFloor}
-                    disabled={!customFloorInput.trim()}
-                    className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 text-neutral-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                    onClick={handleAddFloorLocation}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-colors cursor-pointer"
                   >
-                    + Add Floor
+                    <Plus className="w-3.5 h-3.5" />
+                    + Add Another Floor
                   </button>
+                </div>
+
+                <div className="space-y-2.5">
+                  {floorLocations.map((loc, idx) => (
+                    <div
+                      key={idx}
+                      className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 bg-neutral-950/70 border border-neutral-800 rounded-xl"
+                    >
+                      <div className="flex-1 sm:max-w-xs">
+                        <label className="block text-[10px] uppercase font-semibold text-neutral-400 mb-1">
+                          Floor #{idx + 1}
+                        </label>
+                        <select
+                          value={loc.floor}
+                          onChange={(e) => handleUpdateFloorLocation(idx, 'floor', e.target.value)}
+                          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
+                        >
+                          {MULTIPLAN_FLOORS.map((f) => (
+                            <option key={f} value={f}>
+                              {f}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex-1">
+                        <label className="block text-[10px] uppercase font-semibold text-neutral-400 mb-1">
+                          Shop Number on {loc.floor}
+                        </label>
+                        <input
+                          type="text"
+                          value={loc.shop_number}
+                          onChange={(e) => handleUpdateFloorLocation(idx, 'shop_number', e.target.value)}
+                          placeholder="e.g. 512, 513-514, 205, 5A"
+                          required
+                          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-neutral-600"
+                        />
+                      </div>
+
+                      {floorLocations.length > 1 && (
+                        <div className="sm:self-end sm:pb-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFloorLocation(idx)}
+                            className="p-2 text-neutral-400 hover:text-red-400 hover:bg-neutral-900 rounded-lg transition-colors cursor-pointer"
+                            title="Remove this floor"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -517,8 +528,7 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
             <thead className="bg-neutral-950/60 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-800">
               <tr>
                 <th className="py-3.5 px-4 font-semibold">Shop</th>
-                <th className="py-3.5 px-4 font-semibold">Shop Number</th>
-                <th className="py-3.5 px-4 font-semibold">Level / Floor</th>
+                <th className="py-3.5 px-4 font-semibold" colSpan={2}>Floor &amp; Shop Locations</th>
                 <th className="py-3.5 px-4 font-semibold">Phone</th>
                 <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
               </tr>
@@ -556,19 +566,23 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap font-medium text-neutral-200">
-                      {shop.shop_number}
-                    </td>
-                    <td className="py-3.5 px-4 text-neutral-300">
-                      <div className="flex flex-wrap gap-1 max-w-xs">
-                        {shop.floor.split(/[,&/]+/).map((f) => f.trim()).filter(Boolean).map((f) => (
-                          <span
-                            key={f}
-                            className="inline-block px-1.5 py-0.5 rounded text-[11px] bg-neutral-800 text-neutral-300 border border-neutral-700/60"
-                          >
-                            {f}
+                    <td className="py-3.5 px-4 text-neutral-300" colSpan={2}>
+                      <div className="flex flex-wrap gap-1.5 max-w-sm">
+                        {shop.floor_locations && shop.floor_locations.length > 0 ? (
+                          shop.floor_locations.map((loc, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] bg-neutral-800 text-neutral-200 border border-neutral-700/80"
+                            >
+                              <span className="font-semibold text-emerald-400">{loc.floor}:</span>
+                              <span>Shop {loc.shop_number}</span>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-neutral-800 text-neutral-300 border border-neutral-700/60">
+                            <span>Shop {shop.shop_number} · {shop.floor}</span>
                           </span>
-                        ))}
+                        )}
                       </div>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap text-neutral-400 text-xs">

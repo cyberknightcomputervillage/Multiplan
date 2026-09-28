@@ -1,8 +1,14 @@
+export interface FloorLocation {
+  floor: string;
+  shop_number: string;
+}
+
 export interface Shop {
   id: string;
   name: string;
   shop_number: string;
   floor: string;
+  floor_locations?: FloorLocation[];
   phone?: string;
   logo?: string;
   notes?: string;

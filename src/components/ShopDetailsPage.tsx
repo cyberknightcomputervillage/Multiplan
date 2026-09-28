@@ -228,11 +228,20 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 Multiplan Center
               </span>
-              {shop.floor.split(/[,&/]+/).map((f) => f.trim()).filter(Boolean).map((f) => (
-                <span key={f} className="text-xs text-neutral-300 bg-neutral-800 border border-neutral-700/80 px-2 py-0.5 rounded">
-                  {f}
-                </span>
-              ))}
+              {shop.floor_locations && shop.floor_locations.length > 0 ? (
+                shop.floor_locations.map((loc, i) => (
+                  <span key={i} className="text-xs text-neutral-200 bg-neutral-800 border border-neutral-700/80 px-2.5 py-0.5 rounded flex items-center gap-1">
+                    <span className="font-semibold text-emerald-400">{loc.floor}:</span>
+                    <span>Shop {loc.shop_number}</span>
+                  </span>
+                ))
+              ) : (
+                shop.floor.split(/[,&/]+/).map((f) => f.trim()).filter(Boolean).map((f) => (
+                  <span key={f} className="text-xs text-neutral-300 bg-neutral-800 border border-neutral-700/80 px-2 py-0.5 rounded">
+                    {f}
+                  </span>
+                ))
+              )}
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1.5">
@@ -242,7 +251,13 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
             <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-300 mt-2">
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-emerald-400" />
-                <span>Shop {shop.shop_number} · {shop.floor}</span>
+                {shop.floor_locations && shop.floor_locations.length > 0 ? (
+                  <span>
+                    {shop.floor_locations.map((loc) => `${loc.floor} (Shop ${loc.shop_number})`).join(' · ')}
+                  </span>
+                ) : (
+                  <span>Shop {shop.shop_number} · {shop.floor}</span>
+                )}
               </div>
 
               {shop.phone && (
