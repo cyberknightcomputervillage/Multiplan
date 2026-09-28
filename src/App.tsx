@@ -25,6 +25,7 @@ import {
   isLocalAdminAuthenticated, 
   clearLocalAdminAuthenticated 
 } from './components/AdminPasswordGate';
+import { AdminActionPasswordModal } from './components/AdminActionPasswordModal';
 
 type NavTab = 'search' | 'store_info';
 
@@ -37,6 +38,11 @@ export default function App() {
   // Admin access state
   const [isAdmin, setIsAdmin] = useState<boolean>(() => isLocalAdminAuthenticated());
   const [showAdminLogin, setShowAdminLogin] = useState<boolean>(false);
+  const [pendingGlobalAction, setPendingGlobalAction] = useState<{
+    actionTitle: string;
+    actionDescription?: string;
+    onExecute: () => Promise<void>;
+  } | null>(null);
 
   const [activeTab, setActiveTab] = useState<NavTab>('search');
   const [shops, setShops] = useState<Shop[]>([]);
@@ -251,8 +257,8 @@ export default function App() {
                 <span>Search Shops</span>
               </button>
 
-              {/* Store Information: Available to admin, or password prompt to unlock */}
-              {isAdmin ? (
+              {/* Store Information tab only appears once authorized as admin via /admin */}
+              {isAdmin && (
                 <button
                   onClick={() => {
                     setSelectedShop(null);
@@ -267,18 +273,6 @@ export default function App() {
                 >
                   <Store className="w-4 h-4 text-amber-400" />
                   <span>Store Information</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    setSelectedShop(null);
-                    setShowAdminLogin(true);
-                  }}
-                  className="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium text-neutral-500 hover:text-neutral-300 transition-all cursor-pointer"
-                  title="Admin password required to manage shops"
-                >
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>Admin</span>
                 </button>
               )}
             </nav>
@@ -429,11 +423,15 @@ export default function App() {
             <span>Logged in as: <strong className="text-neutral-300 font-medium">{currentUser.email}</strong></span>
             {isAdmin && shops.length > 0 && (
               <button
-                onClick={async () => {
-                  if (confirm('Clear all existing shops and start completely empty?')) {
-                    await clearAllShopsAndTransactions();
-                    await loadShops();
-                  }
+                onClick={() => {
+                  setPendingGlobalAction({
+                    actionTitle: 'Clear All Database Shops',
+                    actionDescription: 'Enter admin password to permanently delete all shops and their entire transaction histories from the Multiplan Center database.',
+                    onExecute: async () => {
+                      await clearAllShopsAndTransactions();
+                      await loadShops();
+                    },
+                  });
                 }}
                 className="text-[11px] text-neutral-500 hover:text-red-400 underline transition-colors cursor-pointer"
               >
@@ -443,6 +441,20 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Admin Action Password Modal for Global Actions */}
+      {pendingGlobalAction && (
+        <AdminActionPasswordModal
+          actionTitle={pendingGlobalAction.actionTitle}
+          actionDescription={pendingGlobalAction.actionDescription}
+          onSuccess={async () => {
+            const execute = pendingGlobalAction.onExecute;
+            setPendingGlobalAction(null);
+            await execute();
+          }}
+          onClose={() => setPendingGlobalAction(null)}
+        />
+      )}
 
       {/* About Modal */}
       {showAboutModal && (

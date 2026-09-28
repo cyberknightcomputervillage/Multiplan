@@ -15,6 +15,7 @@ import {
 import { Shop, FloorLocation, MULTIPLAN_FLOORS } from '../types';
 import { createShop, updateShop, deleteShopWithTransactions } from '../dataService';
 import { processImageUpload } from '../imageUtils';
+import { AdminActionPasswordModal } from './AdminActionPasswordModal';
 
 interface StoreInfoPageProps {
   shops: Shop[];
@@ -70,6 +71,13 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Password Confirmation Modal State for Actions (Add, Edit, Delete)
+  const [pendingPasswordAction, setPendingPasswordAction] = useState<{
+    actionTitle: string;
+    actionDescription?: string;
+    onExecute: () => Promise<void>;
+  } | null>(null);
 
   // Deletion Confirmation Dialog State
   const [deleteTargetShop, setDeleteTargetShop] = useState<Shop | null>(null);
@@ -182,71 +190,93 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
     const finalFloor = validLocations.map((loc) => loc.floor).join(', ');
     const finalShopNumber = validLocations.map((loc) => loc.shop_number).join(', ');
 
-    try {
-      setIsSubmitting(true);
-      if (editingShop) {
-        await updateShop(editingShop.id, {
-          name: name.trim(),
-          shop_number: finalShopNumber,
-          floor: finalFloor,
-          floor_locations: validLocations,
-          phone: phone.trim(),
-          logo: logo,
-          notes: notes.trim(),
-        });
-        setStatusMessage(`Shop "${name.trim()}" updated successfully.`);
-      } else {
-        // Check for duplicate shop name or number
-        const duplicate = shops.find(
-          (s) =>
-            s.name.toLowerCase() === name.trim().toLowerCase() &&
-            s.shop_number.toLowerCase() === finalShopNumber.toLowerCase()
-        );
-        if (duplicate) {
-          if (!confirm(`A shop named "${duplicate.name}" at Shop ${duplicate.shop_number} already exists. Do you want to proceed anyway?`)) {
-            setIsSubmitting(false);
-            return;
+    // Prompt for password confirmation before committing to Firestore
+    const isEdit = !!editingShop;
+    const actionTitle = isEdit ? `Confirm Edit: "${name.trim()}"` : `Confirm Add: "${name.trim()}"`;
+    const actionDesc = isEdit
+      ? `Enter admin password to save changes for "${name.trim()}".`
+      : `Enter admin password to create new shop "${name.trim()}" in Multiplan Center database.`;
+
+    setPendingPasswordAction({
+      actionTitle,
+      actionDescription: actionDesc,
+      onExecute: async () => {
+        try {
+          setIsSubmitting(true);
+          if (editingShop) {
+            await updateShop(editingShop.id, {
+              name: name.trim(),
+              shop_number: finalShopNumber,
+              floor: finalFloor,
+              floor_locations: validLocations,
+              phone: phone.trim(),
+              logo: logo,
+              notes: notes.trim(),
+            });
+            setStatusMessage(`Shop "${name.trim()}" updated successfully.`);
+          } else {
+            // Check for duplicate shop name or number
+            const duplicate = shops.find(
+              (s) =>
+                s.name.toLowerCase() === name.trim().toLowerCase() &&
+                s.shop_number.toLowerCase() === finalShopNumber.toLowerCase()
+            );
+            if (duplicate) {
+              if (!confirm(`A shop named "${duplicate.name}" at Shop ${duplicate.shop_number} already exists. Do you want to proceed anyway?`)) {
+                setIsSubmitting(false);
+                return;
+              }
+            }
+
+            await createShop({
+              name: name.trim(),
+              shop_number: finalShopNumber,
+              floor: finalFloor,
+              floor_locations: validLocations,
+              phone: phone.trim(),
+              logo: logo,
+              notes: notes.trim(),
+            });
+            setStatusMessage(`Shop "${name.trim()}" added to Multiplan Center database.`);
           }
+
+          await onRefreshShops();
+          resetForm();
+          setTimeout(() => setStatusMessage(null), 4000);
+        } catch (err: any) {
+          console.error('Error saving shop:', err);
+          alert('Failed to save shop: ' + (err.message || 'Unknown error'));
+        } finally {
+          setIsSubmitting(false);
         }
-
-        await createShop({
-          name: name.trim(),
-          shop_number: finalShopNumber,
-          floor: finalFloor,
-          floor_locations: validLocations,
-          phone: phone.trim(),
-          logo: logo,
-          notes: notes.trim(),
-        });
-        setStatusMessage(`Shop "${name.trim()}" added to Multiplan Center database.`);
-      }
-
-      await onRefreshShops();
-      resetForm();
-      setTimeout(() => setStatusMessage(null), 4000);
-    } catch (err: any) {
-      console.error('Error saving shop:', err);
-      alert('Failed to save shop: ' + (err.message || 'Unknown error'));
-    } finally {
-      setIsSubmitting(false);
-    }
+      },
+    });
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteTargetShop) return;
-    try {
-      setIsDeleting(true);
-      await deleteShopWithTransactions(deleteTargetShop.id);
-      setDeleteTargetShop(null);
-      await onRefreshShops();
-      setStatusMessage(`Shop "${deleteTargetShop.name}" and its transactions have been deleted.`);
-      setTimeout(() => setStatusMessage(null), 4000);
-    } catch (err: any) {
-      console.error('Failed to delete shop:', err);
-      alert('Failed to delete shop: ' + err.message);
-    } finally {
-      setIsDeleting(false);
-    }
+    const target = deleteTargetShop;
+    setDeleteTargetShop(null); // Close the first confirmation
+
+    // Trigger password confirmation modal for delete
+    setPendingPasswordAction({
+      actionTitle: `Confirm Deletion: "${target.name}"`,
+      actionDescription: `Enter admin password to permanently delete "${target.name}" and all its recorded transaction history.`,
+      onExecute: async () => {
+        try {
+          setIsDeleting(true);
+          await deleteShopWithTransactions(target.id);
+          await onRefreshShops();
+          setStatusMessage(`Shop "${target.name}" and its transactions have been deleted.`);
+          setTimeout(() => setStatusMessage(null), 4000);
+        } catch (err: any) {
+          console.error('Failed to delete shop:', err);
+          alert('Failed to delete shop: ' + err.message);
+        } finally {
+          setIsDeleting(false);
+        }
+      },
+    });
   };
 
   // Filtered shops list for table
@@ -659,6 +689,20 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Admin Action Password Confirmation Modal */}
+      {pendingPasswordAction && (
+        <AdminActionPasswordModal
+          actionTitle={pendingPasswordAction.actionTitle}
+          actionDescription={pendingPasswordAction.actionDescription}
+          onSuccess={async () => {
+            const execute = pendingPasswordAction.onExecute;
+            setPendingPasswordAction(null);
+            await execute();
+          }}
+          onClose={() => setPendingPasswordAction(null)}
+        />
       )}
     </div>
   );
