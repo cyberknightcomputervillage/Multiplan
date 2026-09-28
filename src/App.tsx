@@ -1,0 +1,370 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Search, 
+  Store, 
+  Building2, 
+  MapPin, 
+  Info, 
+  RefreshCw,
+  AlertCircle,
+  LogOut,
+  User as UserIcon,
+  Trash
+} from 'lucide-react';
+import { User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { auth, googleProvider } from './firebase';
+import { Shop } from './types';
+import { fetchShops, clearAllShopsAndTransactions } from './dataService';
+import { SearchPage } from './components/SearchPage';
+import { ShopDetailsPage } from './components/ShopDetailsPage';
+import { StoreInfoPage } from './components/StoreInfoPage';
+import { AuthModal } from './components/AuthModal';
+
+type NavTab = 'search' | 'store_info';
+
+export default function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const [activeTab, setActiveTab] = useState<NavTab>('search');
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Active viewing/selected shop for details view
+  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+
+  // Shop selected for direct editing in Store Info
+  const [editingShopFromDetails, setEditingShopFromDetails] = useState<Shop | null>(null);
+
+  const [showAboutModal, setShowAboutModal] = useState(false);
+
+  // Listen to Firebase Auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setAuthChecking(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Handle Google Login
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoggingIn(true);
+      setAuthError(null);
+      await signInWithPopup(auth, googleProvider);
+    } catch (err: any) {
+      console.error('Google Sign In error:', err);
+      // Give readable feedback
+      if (err.code === 'auth/popup-closed-by-user') {
+        setAuthError('Sign in popup was closed. Please try again.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setAuthError('Sign in popup was blocked by browser. Please allow popups.');
+      } else {
+        setAuthError(err.message || 'Failed to sign in with Google.');
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setSelectedShop(null);
+    } catch (err: any) {
+      console.error('Sign out error:', err);
+    }
+  };
+
+  // Load shops from Firestore once authenticated
+  const loadShops = async () => {
+    if (!currentUser) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchShops();
+      setShops(data);
+
+      // If a shop was currently selected, refresh its object reference
+      if (selectedShop) {
+        const updated = data.find((s) => s.id === selectedShop.id);
+        if (updated) setSelectedShop(updated);
+      }
+    } catch (err: any) {
+      console.error('Failed to load shops:', err);
+      setError('Could not connect to database. Please check connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      loadShops();
+    }
+  }, [currentUser]);
+
+  const handleSelectShop = (shop: Shop) => {
+    setSelectedShop(shop);
+  };
+
+  const handleBackToSearch = () => {
+    setSelectedShop(null);
+    setActiveTab('search');
+  };
+
+  const handleEditShopFromDetails = (shop: Shop) => {
+    setEditingShopFromDetails(shop);
+    setSelectedShop(null);
+    setActiveTab('store_info');
+  };
+
+  // Auth gate check
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center text-center p-4">
+        <Building2 className="w-10 h-10 text-emerald-400 animate-pulse mb-3" />
+        <div className="text-white font-semibold text-lg">Multiplan Center</div>
+        <div className="text-xs text-neutral-500 mt-1">Verifying authentication...</div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <AuthModal
+        onSignInWithGoogle={handleGoogleSignIn}
+        isLoading={isLoggingIn}
+        error={authError}
+      />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+      {/* Top Main Navigation Bar */}
+      <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          {/* Logo & Center Title */}
+          <div 
+            onClick={() => {
+              setSelectedShop(null);
+              setActiveTab('search');
+            }}
+            className="flex items-center gap-3 cursor-pointer group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-base sm:text-lg text-white tracking-tight flex items-center gap-2">
+                Multiplan Center
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
+                  Dhaka
+                </span>
+              </div>
+              <div className="text-xs text-neutral-400 flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-emerald-400" />
+                Elephant Road · 16 Floors
+              </div>
+            </div>
+          </div>
+
+          {/* Clean Main Nav (Only 1. Search Shops, 2. Store Information) */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            <nav className="flex items-center p-1 bg-neutral-950/80 rounded-lg border border-neutral-800">
+              <button
+                onClick={() => {
+                  setSelectedShop(null);
+                  setActiveTab('search');
+                }}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  activeTab === 'search' && !selectedShop
+                    ? 'bg-neutral-800 text-white shadow-sm font-semibold'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                <Search className="w-4 h-4" />
+                <span>Search Shops</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setSelectedShop(null);
+                  setActiveTab('store_info');
+                }}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  activeTab === 'store_info'
+                    ? 'bg-neutral-800 text-white shadow-sm font-semibold'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                <Store className="w-4 h-4" />
+                <span>Store Information</span>
+              </button>
+            </nav>
+
+            {/* Subtle About / info toggle */}
+            <button
+              onClick={() => setShowAboutModal(true)}
+              className="p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
+              title="About this directory"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+
+            {/* User Profile & Sign Out */}
+            <div className="flex items-center pl-2 ml-1 border-l border-neutral-800 gap-2">
+              {currentUser.photoURL ? (
+                <img
+                  src={currentUser.photoURL}
+                  alt={currentUser.displayName || 'User'}
+                  className="w-7 h-7 rounded-full border border-neutral-700 object-cover"
+                  title={currentUser.displayName || currentUser.email || 'Logged in'}
+                />
+              ) : (
+                <div 
+                  className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-neutral-300 text-xs font-semibold"
+                  title={currentUser.email || 'Logged in'}
+                >
+                  <UserIcon className="w-3.5 h-3.5" />
+                </div>
+              )}
+
+              <button
+                onClick={handleSignOut}
+                className="p-1.5 text-neutral-400 hover:text-red-400 rounded-lg hover:bg-neutral-800 transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Body */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-950/50 border border-red-800/80 rounded-xl text-red-300 text-sm flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={loadShops}
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-900/60 hover:bg-red-800 text-xs font-semibold rounded transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Retry
+            </button>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="min-h-[360px] flex flex-col items-center justify-center text-center">
+            <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin mb-3" />
+            <p className="text-white font-medium text-base">Loading Multiplan Center Directory...</p>
+            <p className="text-xs text-neutral-500 mt-1">Connecting to database</p>
+          </div>
+        ) : (
+          <>
+            {/* View 1: Shop Details Page */}
+            {selectedShop ? (
+              <ShopDetailsPage
+                shop={selectedShop}
+                onBack={handleBackToSearch}
+                onEditShop={handleEditShopFromDetails}
+              />
+            ) : activeTab === 'search' ? (
+              /* View 2: Search Page (Default) */
+              <SearchPage
+                shops={shops}
+                onSelectShop={handleSelectShop}
+                onNavigateToStoreInfo={() => setActiveTab('store_info')}
+              />
+            ) : (
+              /* View 3: Store Information Page */
+              <StoreInfoPage
+                shops={shops}
+                onRefreshShops={loadShops}
+                onViewShop={(shop) => {
+                  setSelectedShop(shop);
+                }}
+                initialEditingShop={editingShopFromDetails}
+                onClearInitialEditingShop={() => setEditingShopFromDetails(null)}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Minimal Footer */}
+      <footer className="border-t border-neutral-800/80 bg-neutral-950 py-4 text-xs text-neutral-500 text-center">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <span>Multiplan Center (ECS Computer City), New Elephant Road, Dhaka-1205 · 16 Floors Total</span>
+          <div className="flex items-center gap-3">
+            <span>Logged in as: <strong className="text-neutral-300 font-medium">{currentUser.email}</strong></span>
+            {shops.length > 0 && (
+              <button
+                onClick={async () => {
+                  if (confirm('Clear all existing shops and start completely empty?')) {
+                    await clearAllShopsAndTransactions();
+                    await loadShops();
+                  }
+                }}
+                className="text-[11px] text-neutral-500 hover:text-red-400 underline transition-colors cursor-pointer"
+              >
+                Clear all database shops
+              </button>
+            )}
+          </div>
+        </div>
+      </footer>
+
+      {/* About Modal */}
+      {showAboutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-xl w-full max-w-md p-6 shadow-2xl">
+            <div className="flex items-center gap-3 pb-3 border-b border-neutral-800">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Multiplan Center Manager</h3>
+                <p className="text-xs text-neutral-400">Dhaka, Bangladesh · 16 Floors</p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3 text-xs text-neutral-300 leading-relaxed">
+              <p>
+                A clean, dedicated personal business tool for finding shops inside Multiplan Center and tracking purchase/sales transactions.
+              </p>
+              <div className="bg-neutral-950 p-3 rounded border border-neutral-800 space-y-1.5">
+                <div className="font-semibold text-white">Key Features:</div>
+                <div>• Typo-tolerant search across shop name, shop number, floor, &amp; phone.</div>
+                <div>• 16 full floors supported (Ground Floor through 16th Floor).</div>
+                <div>• Pure custom directory: starts empty until you input shops.</div>
+                <div>• Full purchase and sales transaction history with unit price &amp; total calculation.</div>
+                <div>• Protected by Google Authentication.</div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowAboutModal(false)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

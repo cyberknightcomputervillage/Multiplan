@@ -1,0 +1,6 @@
+{
+  "name": "Multiplan Center Shop Directory",
+  "description": "Shop directory and purchase/sales transaction history system for Multiplan Center, Dhaka, Bangladesh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
