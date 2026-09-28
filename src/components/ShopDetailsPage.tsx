@@ -215,6 +215,10 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
             <img
               src={shop.logo}
               alt={shop.name}
+              onError={(e) => {
+                // If link fails or is invalid, fallback cleanly
+                (e.target as HTMLElement).style.display = 'none';
+              }}
               className="w-20 h-20 rounded-xl object-cover border border-neutral-700 bg-neutral-800 flex-shrink-0"
             />
           ) : (

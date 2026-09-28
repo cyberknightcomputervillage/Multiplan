@@ -117,6 +117,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                     <img
                       src={shop.logo}
                       alt={shop.name}
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
                       className="w-12 h-12 rounded-lg object-cover border border-neutral-700/60 flex-shrink-0 bg-neutral-800"
                     />
                   ) : (
