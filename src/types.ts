@@ -48,9 +48,6 @@ export const MULTIPLAN_FLOORS = [
   '11th Floor',
   '12th Floor',
   '13th Floor',
-  '14th Floor',
-  '15th Floor',
-  '16th Floor',
 ] as const;
 
 export type FloorType = typeof MULTIPLAN_FLOORS[number] | string;

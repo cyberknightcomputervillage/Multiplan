@@ -233,7 +233,7 @@ export default function App() {
               </div>
               <div className="text-xs text-neutral-400 flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-emerald-400" />
-                Elephant Road · 16 Floors
+                Elephant Road · 14 Floors
               </div>
             </div>
           </div>
@@ -418,7 +418,7 @@ export default function App() {
       {/* Minimal Footer */}
       <footer className="border-t border-neutral-800/80 bg-neutral-950 py-4 text-xs text-neutral-500 text-center">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Multiplan Center (ECS Computer City), New Elephant Road, Dhaka-1205 · 16 Floors Total</span>
+          <span>Multiplan Center (ECS Computer City), New Elephant Road, Dhaka-1205 · 14 Floors Total</span>
           <div className="flex items-center gap-3">
             <span>Logged in as: <strong className="text-neutral-300 font-medium">{currentUser.email}</strong></span>
             {isAdmin && shops.length > 0 && (
@@ -466,7 +466,7 @@ export default function App() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">Multiplan Center Manager</h3>
-                <p className="text-xs text-neutral-400">Dhaka, Bangladesh · 16 Floors</p>
+                <p className="text-xs text-neutral-400">Dhaka, Bangladesh · 14 Floors</p>
               </div>
             </div>
 
@@ -476,7 +476,7 @@ export default function App() {
               </p>
               <div className="bg-neutral-950 p-3 rounded border border-neutral-800 space-y-1.5">
                 <div className="font-semibold text-white">Role Access:</div>
-                <div>• <strong>Admin Panel (/admin)</strong>: Password-protected (`cyberknight`) for managing store records across all 16 floors.</div>
+                <div>• <strong>Admin Panel (/admin)</strong>: Password-protected (`cyberknight`) for managing store records across all 14 floors.</div>
                 <div>• <strong>General Users</strong>: Search directory &amp; manage their own private purchase and sale records tied directly to their Google account.</div>
               </div>
             </div>
