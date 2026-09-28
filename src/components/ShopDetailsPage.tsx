@@ -13,9 +13,13 @@ import {
   Check, 
   X,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Package,
+  Layers,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
-import { Shop, ShopTransaction, TransactionType } from '../types';
+import { Shop, ShopTransaction, TransactionType, TransactionItem } from '../types';
 import { 
   fetchTransactionsForShop, 
   createTransaction, 
@@ -23,6 +27,13 @@ import {
   deleteTransaction 
 } from '../dataService';
 import { User } from 'firebase/auth';
+
+interface FormProductItem {
+  id: string;
+  product_name: string;
+  quantity: string;
+  unit_price: string;
+}
 
 interface ShopDetailsPageProps {
   shop: Shop;
@@ -50,12 +61,13 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
   // Transaction Form fields
   const [txDate, setTxDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [txType, setTxType] = useState<TransactionType>('Purchase');
-  const [txProduct, setTxProduct] = useState('');
-  const [txQuantity, setTxQuantity] = useState<string>('1');
-  const [txUnitPrice, setTxUnitPrice] = useState<string>('');
+  const [txItems, setTxItems] = useState<FormProductItem[]>([
+    { id: '1', product_name: '', quantity: '1', unit_price: '' }
+  ]);
   const [txNotes, setTxNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
 
   // Load transactions for this shop
   const loadTransactions = async () => {
@@ -80,17 +92,21 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
     loadTransactions();
   }, [shop.id, currentUser.uid, isAdmin]);
 
-  // Compute calculated total
-  const calculatedTotal = (Number(txQuantity) || 0) * (Number(txUnitPrice) || 0);
+  // Compute calculated total across all product items in modal
+  const calculatedGrandTotal = txItems.reduce((sum, item) => {
+    const qty = Number(item.quantity) || 0;
+    const price = Number(item.unit_price) || 0;
+    return sum + (qty * price);
+  }, 0);
 
   // Open modal for new transaction
   const handleOpenAdd = () => {
     setEditingTransaction(null);
     setTxDate(new Date().toISOString().split('T')[0]);
     setTxType('Purchase');
-    setTxProduct('');
-    setTxQuantity('1');
-    setTxUnitPrice('');
+    setTxItems([
+      { id: Date.now().toString(), product_name: '', quantity: '1', unit_price: '' }
+    ]);
     setTxNotes('');
     setIsModalOpen(true);
   };
@@ -100,41 +116,104 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
     setEditingTransaction(tx);
     setTxDate(tx.date);
     setTxType(tx.type);
-    setTxProduct(tx.product_name);
-    setTxQuantity(tx.quantity.toString());
-    setTxUnitPrice(tx.unit_price.toString());
+    if (tx.items && tx.items.length > 0) {
+      setTxItems(
+        tx.items.map((it, idx) => ({
+          id: (it.id || idx).toString(),
+          product_name: it.product_name,
+          quantity: it.quantity.toString(),
+          unit_price: it.unit_price.toString(),
+        }))
+      );
+    } else {
+      setTxItems([
+        {
+          id: '1',
+          product_name: tx.product_name,
+          quantity: tx.quantity.toString(),
+          unit_price: tx.unit_price.toString(),
+        }
+      ]);
+    }
     setTxNotes(tx.notes || '');
     setIsModalOpen(true);
   };
 
+  const handleAddItemRow = () => {
+    setTxItems((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+        product_name: '',
+        quantity: '1',
+        unit_price: '',
+      }
+    ]);
+  };
+
+  const handleRemoveItemRow = (id: string) => {
+    if (txItems.length <= 1) return;
+    setTxItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleItemChange = (id: string, field: keyof FormProductItem, value: string) => {
+    setTxItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    );
+  };
+
   const handleSaveTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!txProduct.trim()) {
-      alert('Product or item name is required.');
-      return;
+    
+    // Validate that at least one item has a product name
+    const validItems: TransactionItem[] = [];
+    for (let i = 0; i < txItems.length; i++) {
+      const item = txItems[i];
+      const pName = item.product_name.trim();
+      if (!pName) {
+        alert(`Product name is required for item #${i + 1}.`);
+        return;
+      }
+      const qty = Number(item.quantity);
+      if (isNaN(qty) || qty <= 0) {
+        alert(`Please enter a valid quantity greater than 0 for "${pName}".`);
+        return;
+      }
+      const price = Number(item.unit_price);
+      if (isNaN(price) || price < 0) {
+        alert(`Please enter a valid unit price for "${pName}".`);
+        return;
+      }
+      validItems.push({
+        product_name: pName,
+        quantity: qty,
+        unit_price: price,
+        total_price: Math.round(qty * price * 100) / 100,
+      });
     }
-    const qty = Number(txQuantity);
-    const price = Number(txUnitPrice);
-    if (isNaN(qty) || qty <= 0) {
-      alert('Please enter a valid quantity greater than 0.');
-      return;
-    }
-    if (isNaN(price) || price < 0) {
-      alert('Please enter a valid unit price.');
+
+    if (validItems.length === 0) {
+      alert('Please add at least one product.');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const totalAmount = Math.round(qty * price * 100) / 100;
+      const totalAmount = Math.round(
+        validItems.reduce((acc, curr) => acc + curr.total_price, 0) * 100
+      ) / 100;
+      const totalQty = validItems.reduce((acc, curr) => acc + curr.quantity, 0);
+      const summaryName = validItems.map((i) => i.product_name).join(', ');
+      const avgPrice = totalQty > 0 ? Math.round((totalAmount / totalQty) * 100) / 100 : 0;
 
       if (editingTransaction) {
         await updateTransaction(editingTransaction.id, {
           date: txDate,
           type: txType,
-          product_name: txProduct.trim(),
-          quantity: qty,
-          unit_price: price,
+          items: validItems,
+          product_name: summaryName,
+          quantity: totalQty,
+          unit_price: avgPrice,
           total_amount: totalAmount,
           notes: txNotes.trim(),
         });
@@ -145,9 +224,10 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
           user_email: currentUser.email || '',
           date: txDate,
           type: txType,
-          product_name: txProduct.trim(),
-          quantity: qty,
-          unit_price: price,
+          items: validItems,
+          product_name: summaryName,
+          quantity: totalQty,
+          unit_price: avgPrice,
           total_amount: totalAmount,
           notes: txNotes.trim(),
         });
@@ -334,7 +414,7 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
               </span>
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">
-              Purchases and sales you recorded with {shop.name}
+              Purchases and sales you recorded with {shop.name} (supports multiple product items per record)
             </p>
           </div>
 
@@ -343,7 +423,7 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors shadow-sm cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Add Transaction
+            Add Transaction (Multi-Product)
           </button>
         </div>
 
@@ -363,11 +443,11 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
             <ShoppingBag className="w-10 h-10 text-neutral-600 mx-auto mb-2" />
             <p className="text-neutral-300 font-medium">No transactions recorded yet</p>
             <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
-              Record your purchases or sales with this shop to track history and totals.
+              Record your purchases or sales with multiple products to keep itemized lists and totals.
             </p>
             <button
               onClick={handleOpenAdd}
-              className="mt-4 px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium rounded-lg border border-neutral-700 transition-colors"
+              className="mt-4 px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium rounded-lg border border-neutral-700 transition-colors cursor-pointer"
             >
               + Record First Transaction
             </button>
@@ -375,148 +455,247 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-neutral-950/60 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-800">
+              <thead className="bg-neutral-950 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-800">
                 <tr>
                   <th className="py-3.5 px-4 font-semibold">Date</th>
                   <th className="py-3.5 px-4 font-semibold">Type</th>
-                  <th className="py-3.5 px-4 font-semibold">Product / Item</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Qty</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Unit Price</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Total</th>
+                  <th className="py-3.5 px-4 font-semibold">Products / Item List</th>
+                  <th className="py-3.5 px-4 font-semibold text-right">Items / Qty</th>
+                  <th className="py-3.5 px-4 font-semibold text-right">Total Amount</th>
                   <th className="py-3.5 px-4 font-semibold">Notes</th>
                   <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800 text-neutral-300">
-                {transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-neutral-800/40 transition-colors">
-                    <td className="py-3.5 px-4 whitespace-nowrap text-neutral-400 text-xs">
-                      {tx.date}
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
-                          tx.type === 'Purchase'
-                            ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                            : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                        }`}
-                      >
-                        {tx.type}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-white max-w-xs truncate">
-                      {tx.product_name}
-                    </td>
-                    <td className="py-3.5 px-4 text-right tabular-nums">
-                      {tx.quantity}
-                    </td>
-                    <td className="py-3.5 px-4 text-right tabular-nums text-neutral-400">
-                      ৳{tx.unit_price.toLocaleString('en-US')}
-                    </td>
-                    <td className="py-3.5 px-4 text-right tabular-nums font-semibold text-white">
-                      ৳{tx.total_amount.toLocaleString('en-US')}
-                    </td>
-                    <td className="py-3.5 px-4 text-xs text-neutral-400 max-w-xs truncate">
-                      {tx.notes || '—'}
-                    </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      {deleteConfirmId === tx.id ? (
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleDelete(tx.id)}
-                            className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs"
+                {transactions.map((tx) => {
+                  const hasMultipleItems = tx.items && tx.items.length > 0;
+                  const isExpanded = expandedTxId === tx.id;
+
+                  return (
+                    <React.Fragment key={tx.id}>
+                      <tr className="hover:bg-neutral-800/40 transition-colors">
+                        <td className="py-3.5 px-4 whitespace-nowrap text-neutral-400 text-xs">
+                          {tx.date}
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                              tx.type === 'Purchase'
+                                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                            }`}
                           >
-                            Confirm
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmId(null)}
-                            className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-xs"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="inline-flex items-center gap-1">
-                          <button
-                            onClick={() => handleOpenEdit(tx)}
-                            className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded transition-colors"
-                            title="Edit"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmId(tx.id)}
-                            className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-red-400 rounded transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                            {tx.type}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="space-y-1">
+                            {hasMultipleItems ? (
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-white text-sm">
+                                    {tx.items!.length} {tx.items!.length === 1 ? 'product' : 'products'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedTxId(isExpanded ? null : tx.id)}
+                                    className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-emerald-400 border border-neutral-700 transition-colors cursor-pointer"
+                                  >
+                                    {isExpanded ? (
+                                      <>
+                                        <ChevronUp className="w-3 h-3" /> Hide List
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronDown className="w-3 h-3" /> View List ({tx.items!.length})
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                                <div className="text-xs text-neutral-400 line-clamp-1">
+                                  {tx.items!.map((it) => it.product_name).join(', ')}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="font-medium text-white">
+                                {tx.product_name}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-right tabular-nums">
+                          <span className="font-medium text-neutral-200">
+                            {tx.quantity} pcs
+                          </span>
+                          {hasMultipleItems && (
+                            <div className="text-[11px] text-neutral-500">
+                              ({tx.items!.length} line items)
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-right tabular-nums font-semibold text-emerald-400 whitespace-nowrap">
+                          ৳{tx.total_amount.toLocaleString('en-US')}
+                        </td>
+                        <td className="py-3.5 px-4 text-xs text-neutral-400 max-w-xs truncate">
+                          {tx.notes || '—'}
+                        </td>
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          {deleteConfirmId === tx.id ? (
+                            <div className="inline-flex items-center gap-1.5">
+                              <button
+                                onClick={() => handleDelete(tx.id)}
+                                className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs cursor-pointer"
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-xs cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                onClick={() => handleOpenEdit(tx)}
+                                className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded transition-colors cursor-pointer"
+                                title="Edit"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirmId(tx.id)}
+                                className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-red-400 rounded transition-colors cursor-pointer"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Expandable itemized sub-table */}
+                      {hasMultipleItems && isExpanded && (
+                        <tr className="bg-neutral-950/60 border-t border-b border-neutral-800">
+                          <td colSpan={7} className="px-6 py-4">
+                            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 max-w-4xl">
+                              <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                                <span className="flex items-center gap-1.5">
+                                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                                  Itemized Products Breakdown
+                                </span>
+                                <span>{tx.items!.length} Products</span>
+                              </div>
+                              <div className="divide-y divide-neutral-800/80 text-xs">
+                                {tx.items!.map((it, idx) => (
+                                  <div key={idx} className="py-2 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="w-5 h-5 rounded-full bg-neutral-800 text-neutral-400 flex items-center justify-center text-[10px] font-bold">
+                                        {idx + 1}
+                                      </span>
+                                      <span className="text-white font-medium truncate">
+                                        {it.product_name}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-5 whitespace-nowrap text-neutral-300">
+                                      <span>
+                                        Qty: <strong className="text-white">{it.quantity}</strong>
+                                      </span>
+                                      <span>
+                                        Rate: <strong className="text-neutral-200">৳{it.unit_price.toLocaleString('en-US')}</strong>
+                                      </span>
+                                      <span className="text-emerald-400 font-bold min-w-[70px] text-right">
+                                        ৳{it.total_price.toLocaleString('en-US')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="pt-2 mt-2 border-t border-neutral-800 flex justify-between items-center text-xs font-semibold">
+                                <span className="text-neutral-400">Total Calculation:</span>
+                                <span className="text-sm font-bold text-white">
+                                  ৳{tx.total_amount.toLocaleString('en-US')}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                  </tr>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Add / Edit Transaction Modal */}
+      {/* Add / Edit Transaction Modal with Multiple Products Support */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-xl w-full max-w-md p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto animate-fade-in">
+          <div className="bg-neutral-900 border border-neutral-700/80 rounded-2xl w-full max-w-2xl p-5 sm:p-6 shadow-2xl relative my-auto">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-5 right-5 text-neutral-400 hover:text-white"
+              className="absolute top-5 right-5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-lg font-bold text-white mb-4">
-              {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
-            </h3>
+            <div className="flex items-center gap-3 mb-5 pb-3 border-b border-neutral-800">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <Package className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">
+                  {editingTransaction ? 'Edit Transaction' : 'Record New Transaction'}
+                </h3>
+                <p className="text-xs text-neutral-400">
+                  {shop.name} · Multi-product purchase or sale list
+                </p>
+              </div>
+            </div>
 
             <form onSubmit={handleSaveTransaction} className="space-y-4">
-              {/* Type: Purchase / Sale */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-                  Transaction Type *
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTxType('Purchase')}
-                    className={`py-2 px-3 rounded-lg text-sm font-medium border flex items-center justify-center gap-2 transition-colors ${
-                      txType === 'Purchase'
-                        ? 'bg-blue-600/20 text-blue-400 border-blue-500'
-                        : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-700'
-                    }`}
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    Purchase (Bought)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTxType('Sale')}
-                    className={`py-2 px-3 rounded-lg text-sm font-medium border flex items-center justify-center gap-2 transition-colors ${
-                      txType === 'Sale'
-                        ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500'
-                        : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-700'
-                    }`}
-                  >
-                    <TrendingUp className="w-4 h-4" />
-                    Sale (Sold)
-                  </button>
+              {/* Type and Date in 2 columns */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
+                    Transaction Type *
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setTxType('Purchase')}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                        txType === 'Purchase'
+                          ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
+                          : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                      }`}
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      Purchase (Buy)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTxType('Sale')}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                        txType === 'Sale'
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                          : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                      }`}
+                    >
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      Sale (Sell)
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Date */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-                  Date *
-                </label>
-                <div className="relative">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
+                    Date *
+                  </label>
                   <input
                     type="date"
                     value={txDate}
@@ -527,93 +706,164 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
                 </div>
               </div>
 
-              {/* Product / Item Name */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-                  Product / Item Name *
-                </label>
-                <input
-                  type="text"
-                  value={txProduct}
-                  onChange={(e) => setTxProduct(e.target.value)}
-                  placeholder="e.g. Logitech K120 Keyboard, B650 Motherboard"
-                  required
-                  className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-sm placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Quantity and Unit Price */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-                    Quantity *
+              {/* Products List Section */}
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                    Products / Items in this transaction *
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={txQuantity}
-                    onChange={(e) => setTxQuantity(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
-                  />
+                  <button
+                    type="button"
+                    onClick={handleAddItemRow}
+                    className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 font-medium px-2 py-1 rounded bg-emerald-950/40 border border-emerald-800/60 hover:bg-emerald-900/50 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Another Product
+                  </button>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-                    Unit Price (৳) *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={txUnitPrice}
-                    onChange={(e) => setTxUnitPrice(e.target.value)}
-                    placeholder="850"
-                    required
-                    className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
-                  />
+                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                  {txItems.map((item, index) => {
+                    const rowQty = Number(item.quantity) || 0;
+                    const rowPrice = Number(item.unit_price) || 0;
+                    const rowTotal = rowQty * rowPrice;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 bg-neutral-950 border border-neutral-800 rounded-xl relative group"
+                      >
+                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800/80 text-xs">
+                          <span className="font-semibold text-neutral-400">
+                            Product #{index + 1}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-emerald-400 font-medium">
+                              Subtotal: ৳{rowTotal.toLocaleString('en-US')}
+                            </span>
+                            {txItems.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItemRow(item.id)}
+                                className="text-neutral-500 hover:text-red-400 p-1 rounded transition-colors cursor-pointer"
+                                title="Remove item"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                          {/* Product Name */}
+                          <div className="sm:col-span-6">
+                            <label className="block text-[11px] text-neutral-400 mb-1">
+                              Item Description / Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={item.product_name}
+                              onChange={(e) => handleItemChange(item.id, 'product_name', e.target.value)}
+                              placeholder="e.g. Logitech Mouse, RTX 4060 GPU..."
+                              required
+                              className="w-full px-3 py-1.5 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-xs placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+
+                          {/* Quantity */}
+                          <div className="sm:col-span-3">
+                            <label className="block text-[11px] text-neutral-400 mb-1">
+                              Qty *
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={item.quantity}
+                              onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
+                              required
+                              className="w-full px-3 py-1.5 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-xs focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+
+                          {/* Unit Price */}
+                          <div className="sm:col-span-3">
+                            <label className="block text-[11px] text-neutral-400 mb-1">
+                              Unit Price (৳) *
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={item.unit_price}
+                              onChange={(e) => handleItemChange(item.id, 'unit_price', e.target.value)}
+                              placeholder="850"
+                              required
+                              className="w-full px-3 py-1.5 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-xs focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex justify-start">
+                  <button
+                    type="button"
+                    onClick={handleAddItemRow}
+                    className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-medium py-1.5 px-3 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    + Add Product to this List
+                  </button>
                 </div>
               </div>
 
-              {/* Calculated Total Box */}
-              <div className="p-3 bg-neutral-950/70 border border-neutral-800 rounded-lg flex items-center justify-between">
-                <span className="text-xs text-neutral-400">Total Calculated Amount:</span>
-                <span className="text-base font-bold text-white">
-                  ৳{calculatedTotal.toLocaleString('en-US')}
+              {/* Calculated Grand Total Box */}
+              <div className="p-3.5 bg-emerald-950/30 border border-emerald-800/50 rounded-xl flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-neutral-300 font-medium block">Grand Total:</span>
+                  <span className="text-[11px] text-neutral-400">
+                    {txItems.length} {txItems.length === 1 ? 'item' : 'items'} in total list
+                  </span>
+                </div>
+                <span className="text-xl font-bold text-emerald-400">
+                  ৳{calculatedGrandTotal.toLocaleString('en-US')}
                 </span>
               </div>
 
               {/* Notes */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-                  Notes (Optional)
+                  Transaction Notes / Memo (Optional)
                 </label>
                 <input
                   type="text"
                   value={txNotes}
                   onChange={(e) => setTxNotes(e.target.value)}
-                  placeholder="e.g. Regular stock, Invoice #2031, with warranty"
+                  placeholder="e.g. Invoice #2039, Warranty included, Paid cash"
                   className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-sm placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-sm"
                 >
-                  {isSubmitting ? 'Saving...' : 'Save Transaction'}
+                  {isSubmitting ? 'Saving Transaction...' : `Save ${txType} (${txItems.length} Products)`}
                 </button>
               </div>
             </form>

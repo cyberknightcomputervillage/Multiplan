@@ -124,6 +124,15 @@ export async function fetchTransactionsForShop(
   const results: ShopTransaction[] = [];
   snap.forEach((docSnap) => {
     const data = docSnap.data();
+    const items = Array.isArray(data.items)
+      ? data.items.map((it: any) => ({
+          product_name: it.product_name || '',
+          quantity: Number(it.quantity) || 0,
+          unit_price: Number(it.unit_price) || 0,
+          total_price: Number(it.total_price) || 0,
+        }))
+      : undefined;
+
     results.push({
       id: docSnap.id,
       shop_id: data.shop_id,
@@ -131,8 +140,9 @@ export async function fetchTransactionsForShop(
       user_email: data.user_email || '',
       date: data.date,
       type: data.type,
-      product_name: data.product_name,
-      quantity: Number(data.quantity) || 0,
+      items: items,
+      product_name: data.product_name || (items && items.length > 0 ? items.map(i => i.product_name).join(', ') : ''),
+      quantity: Number(data.quantity) || (items ? items.reduce((sum, i) => sum + i.quantity, 0) : 0),
       unit_price: Number(data.unit_price) || 0,
       total_amount: Number(data.total_amount) || 0,
       notes: data.notes || '',
@@ -153,7 +163,7 @@ export async function createTransaction(
   data: Omit<ShopTransaction, 'id' | 'created_at'>
 ): Promise<ShopTransaction> {
   const now = Date.now();
-  const docRef = await addDoc(collection(db, TRANSACTIONS_COLLECTION), {
+  const payload: any = {
     shop_id: data.shop_id,
     user_id: data.user_id,
     user_email: data.user_email,
@@ -165,7 +175,18 @@ export async function createTransaction(
     total_amount: data.total_amount,
     notes: (data.notes || '').trim(),
     created_at: now,
-  });
+  };
+
+  if (data.items && data.items.length > 0) {
+    payload.items = data.items.map(item => ({
+      product_name: item.product_name.trim(),
+      quantity: Number(item.quantity) || 0,
+      unit_price: Number(item.unit_price) || 0,
+      total_price: Number(item.total_price) || 0,
+    }));
+  }
+
+  const docRef = await addDoc(collection(db, TRANSACTIONS_COLLECTION), payload);
 
   return {
     id: docRef.id,
@@ -174,6 +195,7 @@ export async function createTransaction(
     user_email: data.user_email,
     date: data.date,
     type: data.type,
+    items: data.items,
     product_name: data.product_name.trim(),
     quantity: data.quantity,
     unit_price: data.unit_price,
@@ -188,7 +210,16 @@ export async function updateTransaction(
   data: Partial<Omit<ShopTransaction, 'id' | 'created_at'>>
 ): Promise<void> {
   const docRef = doc(db, TRANSACTIONS_COLLECTION, id);
-  await updateDoc(docRef, { ...data });
+  const updatePayload: any = { ...data };
+  if (data.items) {
+    updatePayload.items = data.items.map(item => ({
+      product_name: item.product_name.trim(),
+      quantity: Number(item.quantity) || 0,
+      unit_price: Number(item.unit_price) || 0,
+      total_price: Number(item.total_price) || 0,
+    }));
+  }
+  await updateDoc(docRef, updatePayload);
 }
 
 export async function deleteTransaction(id: string): Promise<void> {

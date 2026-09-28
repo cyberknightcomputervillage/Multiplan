@@ -18,6 +18,14 @@ export interface Shop {
 
 export type TransactionType = 'Purchase' | 'Sale';
 
+export interface TransactionItem {
+  id?: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
 export interface ShopTransaction {
   id: string;
   shop_id: string;
@@ -25,6 +33,8 @@ export interface ShopTransaction {
   user_email: string;
   date: string; // YYYY-MM-DD
   type: TransactionType;
+  items?: TransactionItem[];
+  // Summary / backwards compatibility fields
   product_name: string;
   quantity: number;
   unit_price: number;
