@@ -35,22 +35,25 @@ export const SearchPage: React.FC<SearchPageProps> = ({
     'Printer',
   ];
 
-  // 1. If a strict product filter is active, only include shops that have that product tag OR have it in remarks/notes
+  // 1. Strict Filter: Match ONLY against remarks/notes and tags (NOT shop names)
   const filteredByProductTag = selectedProductFilter
     ? shops.filter((shop) => {
-        const prod = selectedProductFilter.toLowerCase();
-        // Check tags array
-        const hasInTags = Array.isArray(shop.tags) && shop.tags.some((t) => {
-          const tLower = t.toLowerCase();
-          return tLower === prod || tLower.includes(prod) || prod.includes(tLower);
-        });
-        if (hasInTags) return true;
+        const prod = selectedProductFilter.toLowerCase().trim();
 
-        // Check notes/remarks
+        // 1. Match against remarks/notes
         if (shop.notes) {
           const notesLower = shop.notes.toLowerCase();
-          // Word boundary or containment check
+          // Regex word or substring boundary check for product name inside remarks
           if (notesLower.includes(prod)) return true;
+        }
+
+        // 2. Also match against product tags/items explicitly tagged
+        if (Array.isArray(shop.tags) && shop.tags.length > 0) {
+          const hasInTags = shop.tags.some((t) => {
+            const tLower = t.toLowerCase();
+            return tLower === prod || tLower.includes(prod) || prod.includes(tLower);
+          });
+          if (hasInTags) return true;
         }
 
         return false;
@@ -173,7 +176,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({
           </div>
           {(searchQuery || selectedProductFilter) && (
             <span className="text-neutral-500 italic">
-              Searches shop names (with or without spaces like &quot;startech&quot;), product tags &amp; remarks
+              {selectedProductFilter 
+                ? `Filtered strictly by remarks & product tags ("${selectedProductFilter}")` 
+                : 'Searches shop names (even without spaces like "startech"), product tags & remarks'}
             </span>
           )}
         </div>
