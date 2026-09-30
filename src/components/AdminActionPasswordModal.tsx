@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Lock, ShieldAlert, KeyRound, X } from 'lucide-react';
-import { ADMIN_PASSWORD } from './AdminPasswordGate';
+import { ADMIN_PASSWORD, USER_EDIT_PASSWORD } from './AdminPasswordGate';
 
 interface AdminActionPasswordModalProps {
   actionTitle: string; // e.g. "Add New Shop", "Update Shop", "Delete Shop"
   actionDescription?: string;
+  allowUserEditPassword?: boolean; // if true, permitted users can type 'user' or admin can type ADMIN_PASSWORD
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -12,6 +13,7 @@ interface AdminActionPasswordModalProps {
 export const AdminActionPasswordModal: React.FC<AdminActionPasswordModalProps> = ({
   actionTitle,
   actionDescription,
+  allowUserEditPassword = false,
   onSuccess,
   onClose,
 }) => {
@@ -20,11 +22,17 @@ export const AdminActionPasswordModal: React.FC<AdminActionPasswordModalProps> =
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    const cleanPass = password.trim();
+    const isValid = cleanPass === ADMIN_PASSWORD || (allowUserEditPassword && cleanPass === USER_EDIT_PASSWORD);
+
+    if (isValid) {
       setError(null);
       onSuccess();
     } else {
-      setError('Incorrect admin password. Action aborted.');
+      setError(allowUserEditPassword 
+        ? 'Incorrect password. (For editors: enter edit password, or admin password)' 
+        : 'Incorrect admin password. Action aborted.'
+      );
       setPassword('');
     }
   };
@@ -35,7 +43,7 @@ export const AdminActionPasswordModal: React.FC<AdminActionPasswordModalProps> =
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors cursor-pointer"
           title="Cancel"
         >
           <X className="w-5 h-5" />
@@ -52,7 +60,9 @@ export const AdminActionPasswordModal: React.FC<AdminActionPasswordModalProps> =
         </div>
 
         <div className="mt-3.5 text-xs text-neutral-300 leading-relaxed">
-          {actionDescription || 'Please re-enter your admin password to authorize this database change.'}
+          {actionDescription || (allowUserEditPassword 
+            ? 'Enter your editor password ("user") or administrator password to authorize this change.'
+            : 'Please enter your admin password to authorize this change.')}
         </div>
 
         {error && (
@@ -65,7 +75,7 @@ export const AdminActionPasswordModal: React.FC<AdminActionPasswordModalProps> =
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5">
-              Admin Password *
+              {allowUserEditPassword ? 'Password (Editor / Admin) *' : 'Admin Password *'}
             </label>
             <div className="relative">
               <input
@@ -103,3 +113,4 @@ export const AdminActionPasswordModal: React.FC<AdminActionPasswordModalProps> =
     </div>
   );
 };
+

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Phone, Building2, ExternalLink, X } from 'lucide-react';
+import { Search, MapPin, Phone, Building2, ExternalLink, X, Plus } from 'lucide-react';
 import { Shop } from '../types';
 import { fuzzySearchShops } from '../fuzzySearch';
 
 interface SearchPageProps {
   shops: Shop[];
   isAdmin: boolean;
+  canEditShop?: boolean;
   onSelectShop: (shop: Shop) => void;
   onNavigateToStoreInfo: () => void;
 }
@@ -13,6 +14,7 @@ interface SearchPageProps {
 export const SearchPage: React.FC<SearchPageProps> = ({
   shops,
   isAdmin,
+  canEditShop = false,
   onSelectShop,
   onNavigateToStoreInfo,
 }) => {
@@ -24,16 +26,28 @@ export const SearchPage: React.FC<SearchPageProps> = ({
     <div className="space-y-6">
       {/* Header & Big Search Bar */}
       <div className="bg-neutral-900/90 border border-neutral-800 rounded-xl p-6 sm:p-8 backdrop-blur shadow-sm">
-        <div className="max-w-2xl">
-          <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400">
-            Multiplan Center • Dhaka
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
-            Search Multiplan Center Shops
-          </h2>
-          <p className="text-sm text-neutral-400 mt-1.5">
-            Instant typo-tolerant search across shop names, shop numbers, floors, or phone numbers.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="max-w-2xl">
+            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400">
+              Multiplan Center • Dhaka
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
+              Search Multiplan Center Shops
+            </h2>
+            <p className="text-sm text-neutral-400 mt-1.5">
+              Instant typo-tolerant search across shop names, shop numbers, floors, or phone numbers.
+            </p>
+          </div>
+
+          {(isAdmin || canEditShop) && (
+            <button
+              onClick={onNavigateToStoreInfo}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow cursor-pointer flex-shrink-0 self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Shop
+            </button>
+          )}
         </div>
 
         {/* Large Search Input */}
@@ -93,7 +107,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                   : 'The directory is currently empty. Shops will appear here once added by the administrator.')
               : `No shops matched "${searchQuery}".`}
           </p>
-          {isAdmin && (
+          {(isAdmin || canEditShop) && (
             <button
               onClick={onNavigateToStoreInfo}
               className="mt-5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"

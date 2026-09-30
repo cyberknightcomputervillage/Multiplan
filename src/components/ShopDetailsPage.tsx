@@ -39,6 +39,7 @@ interface ShopDetailsPageProps {
   shop: Shop;
   currentUser: User;
   isAdmin: boolean;
+  canEditShop?: boolean;
   onBack: () => void;
   onEditShop: (shop: Shop) => void;
 }
@@ -47,6 +48,7 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
   shop,
   currentUser,
   isAdmin,
+  canEditShop = false,
   onBack,
   onEditShop,
 }) => {
@@ -277,13 +279,13 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
           Back to Search
         </button>
 
-        {isAdmin && (
+        {(isAdmin || canEditShop) && (
           <button
             onClick={() => onEditShop(shop)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 transition-colors text-sm cursor-pointer"
           >
             <Edit3 className="w-4 h-4 text-emerald-400" />
-            Edit Shop Info (Admin)
+            {isAdmin ? 'Edit Shop Info (Admin)' : 'Edit Shop Info'}
           </button>
         )}
       </div>

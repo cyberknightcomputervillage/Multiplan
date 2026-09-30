@@ -71,9 +71,12 @@ export interface AppUser {
   displayName?: string;
   photoURL?: string;
   status: UserAccessStatus;
+  can_edit?: boolean;
   request_note?: string;
   requested_at: number;
   updated_at: number;
   approved_by?: string;
+  edit_permitted_at?: number;
 }
+
 

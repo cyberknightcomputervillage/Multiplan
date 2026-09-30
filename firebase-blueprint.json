@@ -68,10 +68,12 @@
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
         "status": { "type": "string", "enum": ["approved", "pending", "banned"] },
+        "can_edit": { "type": "boolean" },
         "request_note": { "type": "string" },
         "requested_at": { "type": "number" },
         "updated_at": { "type": "number" },
-        "approved_by": { "type": "string" }
+        "approved_by": { "type": "string" },
+        "edit_permitted_at": { "type": "number" }
       },
       "required": ["email", "status"]
     }

@@ -22,6 +22,8 @@ import { UserAccessManagementTab } from './UserAccessManagementTab';
 interface StoreInfoPageProps {
   shops: Shop[];
   currentUserEmail?: string;
+  isAdmin: boolean;
+  isUserEditor?: boolean;
   onRefreshShops: () => Promise<void>;
   onViewShop: (shop: Shop) => void;
   initialEditingShop?: Shop | null;
@@ -31,12 +33,14 @@ interface StoreInfoPageProps {
 export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
   shops,
   currentUserEmail = '',
+  isAdmin,
+  isUserEditor = false,
   onRefreshShops,
   onViewShop,
   initialEditingShop = null,
   onClearInitialEditingShop,
 }) => {
-  // Admin secondary navigation tab
+  // Admin secondary navigation tab (only for full admin)
   const [adminTab, setAdminTab] = useState<'shops' | 'users'>('shops');
 
   // Form visibility / mode
@@ -83,6 +87,7 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
   const [pendingPasswordAction, setPendingPasswordAction] = useState<{
     actionTitle: string;
     actionDescription?: string;
+    allowUserEditPassword?: boolean;
     onExecute: () => Promise<void>;
   } | null>(null);
 
@@ -190,12 +195,13 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
     const isEdit = !!editingShop;
     const actionTitle = isEdit ? `Confirm Edit: "${name.trim()}"` : `Confirm Add: "${name.trim()}"`;
     const actionDesc = isEdit
-      ? `Enter admin password to save changes for "${name.trim()}".`
-      : `Enter admin password to create new shop "${name.trim()}" in Multiplan Center database.`;
+      ? `Enter password to save changes for "${name.trim()}". (Editor password: "user", or Admin password)`
+      : `Enter password to create new shop "${name.trim()}" in Multiplan Center database. (Editor password: "user", or Admin password)`;
 
     setPendingPasswordAction({
       actionTitle,
       actionDescription: actionDesc,
+      allowUserEditPassword: true, // both admin and permitted user editors can confirm
       onExecute: async () => {
         try {
           setIsSubmitting(true);
@@ -294,48 +300,52 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400">
-              Admin Control Center
+              {isAdmin ? 'Admin Control Center' : 'Shop Editor Portal'}
             </span>
             <h2 className="text-2xl font-bold text-white mt-1">
-              Store &amp; Access Management
+              {isAdmin ? 'Store & Access Management' : 'Store Information Editor'}
             </h2>
             <p className="text-xs text-neutral-400 mt-1">
-              Multiplan Center directory control, store records, and user whitelist permissions.
+              {isAdmin 
+                ? 'Multiplan Center directory control, store records, and user whitelist permissions.' 
+                : 'Add new shops or update shop details. Use your editor password ("user") to save changes.'}
             </p>
           </div>
 
-          {/* Sub Navigation between Store Directory and User Access */}
-          <div className="flex items-center gap-1.5 p-1 bg-neutral-950 rounded-lg border border-neutral-800">
-            <button
-              onClick={() => {
-                setAdminTab('shops');
-                setShowForm(false);
-              }}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                adminTab === 'shops'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Shops Directory ({shops.length})</span>
-            </button>
+          {/* Sub Navigation between Store Directory and User Access (only for full admin) */}
+          {isAdmin && (
+            <div className="flex items-center gap-1.5 p-1 bg-neutral-950 rounded-lg border border-neutral-800">
+              <button
+                onClick={() => {
+                  setAdminTab('shops');
+                  setShowForm(false);
+                }}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                  adminTab === 'shops'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Shops Directory ({shops.length})</span>
+              </button>
 
-            <button
-              onClick={() => {
-                setAdminTab('users');
-                setShowForm(false);
-              }}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                adminTab === 'users'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>User Permissions &amp; Requests</span>
-            </button>
-          </div>
+              <button
+                onClick={() => {
+                  setAdminTab('users');
+                  setShowForm(false);
+                }}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                  adminTab === 'users'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>User Permissions &amp; Requests</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -698,16 +708,18 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
                         </button>
                         <button
                           onClick={() => handleOpenEdit(shop)}
-                          className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium transition-colors"
+                          className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium transition-colors cursor-pointer"
                         >
                           Edit
                         </button>
-                        <button
-                          onClick={() => setDeleteTargetShop(shop)}
-                          className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-red-950/60 text-red-400 text-xs font-medium transition-colors"
-                        >
-                          Delete
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => setDeleteTargetShop(shop)}
+                            className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-red-950/60 text-red-400 text-xs font-medium transition-colors cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -769,6 +781,7 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
         <AdminActionPasswordModal
           actionTitle={pendingPasswordAction.actionTitle}
           actionDescription={pendingPasswordAction.actionDescription}
+          allowUserEditPassword={pendingPasswordAction.allowUserEditPassword}
           onSuccess={async () => {
             const execute = pendingPasswordAction.onExecute;
             setPendingPasswordAction(null);

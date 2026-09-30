@@ -191,6 +191,7 @@ export default function App() {
 
   // Load shops if user is either permitted as approved user OR is local admin
   const isPermittedUser = userAccess?.status === 'approved' || isAdmin;
+  const canEditShop = !!userAccess?.can_edit || isAdmin;
 
   useEffect(() => {
     if (currentUser && isPermittedUser) {
@@ -220,7 +221,7 @@ export default function App() {
   };
 
   const handleEditShopFromDetails = (shop: Shop) => {
-    if (!isAdmin) {
+    if (!isAdmin && !canEditShop) {
       setShowAdminLogin(true);
       return;
     }
@@ -312,6 +313,11 @@ export default function App() {
                     Admin Active
                   </span>
                 )}
+                {!isAdmin && canEditShop && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                    Editor
+                  </span>
+                )}
               </div>
               <div className="text-xs text-neutral-400 flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-emerald-400" />
@@ -339,8 +345,8 @@ export default function App() {
                 <span>Search Shops</span>
               </button>
 
-              {/* Store Information tab only appears once authorized as admin via /admin */}
-              {isAdmin && (
+              {/* Store Information tab appears if authorized as admin OR user has canEditShop permission */}
+              {(isAdmin || canEditShop) && (
                 <button
                   onClick={() => {
                     setSelectedShop(null);
@@ -353,7 +359,7 @@ export default function App() {
                       : 'text-neutral-400 hover:text-neutral-200'
                   }`}
                 >
-                  <Store className="w-4 h-4 text-amber-400" />
+                  <Store className={`w-4 h-4 ${isAdmin ? 'text-amber-400' : 'text-blue-400'}`} />
                   <span>Store Information</span>
                 </button>
               )}
@@ -454,6 +460,7 @@ export default function App() {
                 shop={selectedShop}
                 currentUser={currentUser}
                 isAdmin={isAdmin}
+                canEditShop={canEditShop}
                 onBack={handleBackToSearch}
                 onEditShop={handleEditShopFromDetails}
               />
@@ -462,20 +469,23 @@ export default function App() {
               <SearchPage
                 shops={shops}
                 isAdmin={isAdmin}
+                canEditShop={canEditShop}
                 onSelectShop={handleSelectShop}
                 onNavigateToStoreInfo={() => {
-                  if (isAdmin) {
+                  if (isAdmin || canEditShop) {
                     setActiveTab('store_info');
                   } else {
                     setShowAdminLogin(true);
                   }
                 }}
               />
-            ) : isAdmin ? (
-              /* View 3: Store Information Page (Only for authenticated admin) */
+            ) : (isAdmin || canEditShop) ? (
+              /* View 3: Store Information Page (For authenticated admin or permitted user editors) */
               <StoreInfoPage
                 shops={shops}
                 currentUserEmail={currentUser.email || ''}
+                isAdmin={isAdmin}
+                isUserEditor={!isAdmin && canEditShop}
                 onRefreshShops={loadShops}
                 onViewShop={(shop) => {
                   setSelectedShop(shop);

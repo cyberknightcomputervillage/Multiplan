@@ -12,12 +12,16 @@ import {
   Clock, 
   Mail, 
   AlertCircle,
-  UserCheck
+  UserCheck,
+  Edit,
+  Shield,
+  Key
 } from 'lucide-react';
 import { AppUser, UserAccessStatus } from '../types';
 import { 
   fetchAllUserAccess, 
   setUserAccessStatus, 
+  setUserEditPermission,
   deleteUserAccess, 
   directAddApprovedUser 
 } from '../dataService';
@@ -33,13 +37,14 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | UserAccessStatus>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | UserAccessStatus | 'editors'>('all');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Direct add user modal / form
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
+  const [newGiveEdit, setNewGiveEdit] = useState(false);
 
   // Password confirmation modal for sensitive administrative actions
   const [pendingPasswordAction, setPendingPasswordAction] = useState<{
@@ -78,6 +83,28 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
     });
   };
 
+  const handleToggleEditPermission = (user: AppUser) => {
+    const willGrant = !user.can_edit;
+    const actionTitle = willGrant ? `Grant Edit Permission: ${user.email}` : `Revoke Edit Permission: ${user.email}`;
+    const actionDescription = willGrant 
+      ? `Enter admin password to grant "${user.email}" permission to add or edit shops (Password for user actions will be "user").`
+      : `Enter admin password to revoke shop editing permissions from "${user.email}".`;
+
+    setPendingPasswordAction({
+      actionTitle,
+      actionDescription,
+      onExecute: async () => {
+        await setUserEditPermission(user.id, willGrant, currentUserEmail);
+        setStatusMessage(willGrant 
+          ? `Edit permission GRANTED to ${user.email}. (User password: "user")`
+          : `Edit permission REVOKED from ${user.email}.`
+        );
+        await loadUsers();
+        setTimeout(() => setStatusMessage(null), 4000);
+      },
+    });
+  };
+
   const handleDeleteUser = (user: AppUser) => {
     setPendingPasswordAction({
       actionTitle: `Delete User Permission: ${user.email}`,
@@ -101,12 +128,16 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
 
     setPendingPasswordAction({
       actionTitle: `Pre-Approve Account: ${cleanEmail}`,
-      actionDescription: `Enter admin password to permit "${cleanEmail}" to access the website immediately.`,
+      actionDescription: `Enter admin password to permit "${cleanEmail}" to access the website immediately${newGiveEdit ? ' with shop edit permissions' : ''}.`,
       onExecute: async () => {
-        await directAddApprovedUser(cleanEmail, currentUserEmail, newDisplayName.trim());
+        const record = await directAddApprovedUser(cleanEmail, currentUserEmail, newDisplayName.trim());
+        if (newGiveEdit) {
+          await setUserEditPermission(record.id, true, currentUserEmail);
+        }
         setShowAddModal(false);
         setNewEmail('');
         setNewDisplayName('');
+        setNewGiveEdit(false);
         setStatusMessage(`User ${cleanEmail} approved successfully!`);
         await loadUsers();
         setTimeout(() => setStatusMessage(null), 4000);
@@ -116,7 +147,12 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
 
   // Filtered list
   const filteredUsers = users.filter((u) => {
-    const matchesStatus = statusFilter === 'all' || u.status === statusFilter;
+    let matchesStatus = true;
+    if (statusFilter === 'editors') {
+      matchesStatus = !!u.can_edit;
+    } else if (statusFilter !== 'all') {
+      matchesStatus = u.status === statusFilter;
+    }
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || u.email.toLowerCase().includes(q) || (u.displayName && u.displayName.toLowerCase().includes(q));
     return matchesStatus && matchesSearch;
@@ -125,6 +161,7 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
   const pendingCount = users.filter((u) => u.status === 'pending').length;
   const approvedCount = users.filter((u) => u.status === 'approved').length;
   const bannedCount = users.filter((u) => u.status === 'banned').length;
+  const editorsCount = users.filter((u) => !!u.can_edit).length;
 
   return (
     <div className="space-y-6">
@@ -135,7 +172,7 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
             Access Control &amp; Security
           </span>
           <h2 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
-            User Access Management
+            User Access &amp; Edit Permissions
             {pendingCount > 0 && (
               <span className="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold animate-pulse">
                 {pendingCount} Pending Approval
@@ -143,7 +180,7 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
             )}
           </h2>
           <p className="text-xs text-neutral-400 mt-1 max-w-xl">
-            Only Google accounts approved here can view and use the Multiplan Center website. Review pending requests, pre-authorize emails, revoke access, or ban accounts.
+            Authorize users to view the site, and grant selected users <strong>Shop Edit Permission</strong> so they can add or edit shops using the user password (<code>user</code>). Admins can give or take away edit rights at any time.
           </p>
         </div>
 
@@ -174,7 +211,7 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
 
       {/* Filter Tabs & Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 bg-neutral-900 p-1 rounded-lg border border-neutral-800">
+        <div className="flex flex-wrap items-center gap-1.5 bg-neutral-900 p-1 rounded-lg border border-neutral-800">
           <button
             onClick={() => setStatusFilter('all')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
@@ -204,6 +241,17 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
             }`}
           >
             Permitted ({approvedCount})
+          </button>
+          <button
+            onClick={() => setStatusFilter('editors')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              statusFilter === 'editors'
+                ? 'bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30'
+                : 'text-neutral-400 hover:text-blue-300'
+            }`}
+          >
+            <Edit className="w-3 h-3 text-blue-400" />
+            Can Edit Shops ({editorsCount})
           </button>
           <button
             onClick={() => setStatusFilter('banned')}
@@ -245,6 +293,8 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
             <p className="text-xs text-neutral-500 mt-1">
               {statusFilter === 'pending'
                 ? 'There are currently no users waiting for access approval.'
+                : statusFilter === 'editors'
+                ? 'No users currently have edit permission assigned.'
                 : 'No users match your current filter.'}
             </p>
           </div>
@@ -254,9 +304,10 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
               <thead className="bg-neutral-950 text-neutral-400 uppercase tracking-wider border-b border-neutral-800 text-[11px]">
                 <tr>
                   <th className="py-3 px-4 font-semibold">User / Google Email</th>
-                  <th className="py-3 px-4 font-semibold">Access Status</th>
+                  <th className="py-3 px-4 font-semibold">View Access</th>
+                  <th className="py-3 px-4 font-semibold">Shop Edit Permission</th>
                   <th className="py-3 px-4 font-semibold">Request Note</th>
-                  <th className="py-3 px-4 font-semibold">Requested At</th>
+                  <th className="py-3 px-4 font-semibold">Date</th>
                   <th className="py-3 px-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
@@ -301,6 +352,37 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-400 border border-red-500/30">
                             <Ban className="w-3 h-3" /> Banned
                           </span>
+                        )}
+                      </td>
+
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {user.status === 'approved' ? (
+                          <div className="flex items-center gap-2">
+                            {user.can_edit ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                                <Edit className="w-3 h-3 text-blue-400" />
+                                Can Add &amp; Edit (pass: user)
+                              </span>
+                            ) : (
+                              <span className="text-neutral-500 text-[11px]">
+                                View Only
+                              </span>
+                            )}
+
+                            <button
+                              onClick={() => handleToggleEditPermission(user)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border ${
+                                user.can_edit
+                                  ? 'bg-neutral-800 text-amber-400 border-neutral-700 hover:bg-neutral-700'
+                                  : 'bg-blue-950/60 text-blue-300 border-blue-800/60 hover:bg-blue-900/60'
+                              }`}
+                              title={user.can_edit ? 'Revoke shop edit permission' : 'Allow user to add & edit shops'}
+                            >
+                              {user.can_edit ? 'Revoke Edit' : 'Give Edit Permission'}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-neutral-600 text-[11px]">—</span>
                         )}
                       </td>
 
@@ -404,6 +486,20 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
                 />
               </div>
 
+              <div className="p-3 bg-neutral-950 border border-neutral-800 rounded-lg flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  id="giveEditCheck"
+                  checked={newGiveEdit}
+                  onChange={(e) => setNewGiveEdit(e.target.checked)}
+                  className="mt-0.5 accent-blue-500 rounded cursor-pointer"
+                />
+                <label htmlFor="giveEditCheck" className="text-xs text-neutral-300 cursor-pointer select-none">
+                  <strong className="text-white block font-semibold">Grant Shop Edit Permission</strong>
+                  Allow this user to add new shops and edit existing shops (password will be: <code>user</code>).
+                </label>
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-3">
                 <button
                   type="button"
@@ -440,3 +536,4 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
     </div>
   );
 };
+

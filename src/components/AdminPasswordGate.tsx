@@ -7,6 +7,7 @@ interface AdminPasswordGateProps {
 }
 
 export const ADMIN_PASSWORD = 'cyberknight';
+export const USER_EDIT_PASSWORD = 'user';
 const ADMIN_STORAGE_KEY = 'multiplan_admin_auth_token';
 
 export function isLocalAdminAuthenticated(): boolean {

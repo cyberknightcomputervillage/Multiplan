@@ -38,10 +38,12 @@ export async function fetchUserAccessRecord(email: string): Promise<AppUser | nu
       displayName: data.displayName || '',
       photoURL: data.photoURL || '',
       status: data.status || 'pending',
+      can_edit: !!data.can_edit,
       request_note: data.request_note || '',
       requested_at: data.requested_at || 0,
       updated_at: data.updated_at || 0,
       approved_by: data.approved_by || '',
+      edit_permitted_at: data.edit_permitted_at || undefined,
     };
   }
 
@@ -58,10 +60,12 @@ export async function fetchUserAccessRecord(email: string): Promise<AppUser | nu
       displayName: data.displayName || '',
       photoURL: data.photoURL || '',
       status: data.status || 'pending',
+      can_edit: !!data.can_edit,
       request_note: data.request_note || '',
       requested_at: data.requested_at || 0,
       updated_at: data.updated_at || 0,
       approved_by: data.approved_by || '',
+      edit_permitted_at: data.edit_permitted_at || undefined,
     };
   }
 
@@ -97,6 +101,7 @@ export async function requestUserAccess(userData: {
     displayName: userData.displayName || '',
     photoURL: userData.photoURL || '',
     status: 'pending',
+    can_edit: false,
     request_note: userData.request_note || '',
     requested_at: now,
     updated_at: now,
@@ -119,10 +124,12 @@ export async function fetchAllUserAccess(): Promise<AppUser[]> {
       displayName: data.displayName || '',
       photoURL: data.photoURL || '',
       status: (data.status as UserAccessStatus) || 'pending',
+      can_edit: !!data.can_edit,
       request_note: data.request_note || '',
       requested_at: data.requested_at || 0,
       updated_at: data.updated_at || 0,
       approved_by: data.approved_by || '',
+      edit_permitted_at: data.edit_permitted_at || undefined,
     });
   });
 
@@ -139,6 +146,22 @@ export async function setUserAccessStatus(
   await updateDoc(docRef, {
     status: newStatus,
     updated_at: Date.now(),
+    ...(approvedBy ? { approved_by: approvedBy } : {}),
+  });
+}
+
+export async function setUserEditPermission(
+  docIdOrEmail: string,
+  canEdit: boolean,
+  approvedBy?: string
+): Promise<void> {
+  const docId = docIdOrEmail.includes('@') ? emailToDocId(docIdOrEmail) : docIdOrEmail;
+  const docRef = doc(db, USER_ACCESS_COLLECTION, docId);
+  const now = Date.now();
+  await updateDoc(docRef, {
+    can_edit: canEdit,
+    updated_at: now,
+    ...(canEdit ? { edit_permitted_at: now } : {}),
     ...(approvedBy ? { approved_by: approvedBy } : {}),
   });
 }
