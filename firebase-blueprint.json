@@ -57,6 +57,23 @@
         "created_at": { "type": "number" }
       },
       "required": ["shop_id", "user_id", "date", "type", "total_amount"]
+    },
+    "user_access": {
+      "title": "UserAccess",
+      "description": "Whitelisted and permitted user Gmail accounts for accessing the directory",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "status": { "type": "string", "enum": ["approved", "pending", "banned"] },
+        "request_note": { "type": "string" },
+        "requested_at": { "type": "number" },
+        "updated_at": { "type": "number" },
+        "approved_by": { "type": "string" }
+      },
+      "required": ["email", "status"]
     }
   }
 }

@@ -61,3 +61,19 @@ export const MULTIPLAN_FLOORS = [
 ] as const;
 
 export type FloorType = typeof MULTIPLAN_FLOORS[number] | string;
+
+export type UserAccessStatus = 'approved' | 'pending' | 'banned';
+
+export interface AppUser {
+  id: string; // usually normalized email or uid
+  uid?: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  status: UserAccessStatus;
+  request_note?: string;
+  requested_at: number;
+  updated_at: number;
+  approved_by?: string;
+}
+

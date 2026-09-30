@@ -1,7 +1,9 @@
 import { 
   collection, 
   doc, 
+  getDoc,
   getDocs, 
+  setDoc,
   addDoc, 
   updateDoc, 
   deleteDoc, 
@@ -10,10 +12,167 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Shop, ShopTransaction } from './types';
+import { Shop, ShopTransaction, AppUser, UserAccessStatus } from './types';
 
 const SHOPS_COLLECTION = 'shops';
 const TRANSACTIONS_COLLECTION = 'transactions';
+const USER_ACCESS_COLLECTION = 'user_access';
+
+// Normalizes email to doc id safe format
+export function emailToDocId(email: string): string {
+  return email.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+}
+
+export async function fetchUserAccessRecord(email: string): Promise<AppUser | null> {
+  const normEmail = email.toLowerCase().trim();
+  const docId = emailToDocId(normEmail);
+  const docRef = doc(db, USER_ACCESS_COLLECTION, docId);
+  const snap = await getDoc(docRef);
+
+  if (snap.exists()) {
+    const data = snap.data();
+    return {
+      id: snap.id,
+      uid: data.uid || '',
+      email: data.email || normEmail,
+      displayName: data.displayName || '',
+      photoURL: data.photoURL || '',
+      status: data.status || 'pending',
+      request_note: data.request_note || '',
+      requested_at: data.requested_at || 0,
+      updated_at: data.updated_at || 0,
+      approved_by: data.approved_by || '',
+    };
+  }
+
+  // Also query in case doc id is different
+  const q = query(collection(db, USER_ACCESS_COLLECTION), where('email', '==', normEmail));
+  const querySnap = await getDocs(q);
+  if (!querySnap.empty) {
+    const foundDoc = querySnap.docs[0];
+    const data = foundDoc.data();
+    return {
+      id: foundDoc.id,
+      uid: data.uid || '',
+      email: data.email || normEmail,
+      displayName: data.displayName || '',
+      photoURL: data.photoURL || '',
+      status: data.status || 'pending',
+      request_note: data.request_note || '',
+      requested_at: data.requested_at || 0,
+      updated_at: data.updated_at || 0,
+      approved_by: data.approved_by || '',
+    };
+  }
+
+  return null;
+}
+
+export async function requestUserAccess(userData: {
+  email: string;
+  uid?: string;
+  displayName?: string;
+  photoURL?: string;
+  request_note?: string;
+}): Promise<AppUser> {
+  const normEmail = userData.email.toLowerCase().trim();
+  const docId = emailToDocId(normEmail);
+  const docRef = doc(db, USER_ACCESS_COLLECTION, docId);
+  const now = Date.now();
+
+  // If already exists, return existing or update uid
+  const existing = await fetchUserAccessRecord(normEmail);
+  if (existing) {
+    if (userData.uid && !existing.uid) {
+      await updateDoc(docRef, { uid: userData.uid, updated_at: now });
+      existing.uid = userData.uid;
+    }
+    return existing;
+  }
+
+  const newRecord: AppUser = {
+    id: docId,
+    email: normEmail,
+    uid: userData.uid || '',
+    displayName: userData.displayName || '',
+    photoURL: userData.photoURL || '',
+    status: 'pending',
+    request_note: userData.request_note || '',
+    requested_at: now,
+    updated_at: now,
+  };
+
+  await setDoc(docRef, newRecord);
+  return newRecord;
+}
+
+export async function fetchAllUserAccess(): Promise<AppUser[]> {
+  const colRef = collection(db, USER_ACCESS_COLLECTION);
+  const snap = await getDocs(colRef);
+  const list: AppUser[] = [];
+  snap.forEach((d) => {
+    const data = d.data();
+    list.push({
+      id: d.id,
+      uid: data.uid || '',
+      email: data.email || '',
+      displayName: data.displayName || '',
+      photoURL: data.photoURL || '',
+      status: (data.status as UserAccessStatus) || 'pending',
+      request_note: data.request_note || '',
+      requested_at: data.requested_at || 0,
+      updated_at: data.updated_at || 0,
+      approved_by: data.approved_by || '',
+    });
+  });
+
+  return list.sort((a, b) => b.requested_at - a.requested_at);
+}
+
+export async function setUserAccessStatus(
+  docIdOrEmail: string,
+  newStatus: UserAccessStatus,
+  approvedBy?: string
+): Promise<void> {
+  const docId = docIdOrEmail.includes('@') ? emailToDocId(docIdOrEmail) : docIdOrEmail;
+  const docRef = doc(db, USER_ACCESS_COLLECTION, docId);
+  await updateDoc(docRef, {
+    status: newStatus,
+    updated_at: Date.now(),
+    ...(approvedBy ? { approved_by: approvedBy } : {}),
+  });
+}
+
+export async function deleteUserAccess(docIdOrEmail: string): Promise<void> {
+  const docId = docIdOrEmail.includes('@') ? emailToDocId(docIdOrEmail) : docIdOrEmail;
+  const docRef = doc(db, USER_ACCESS_COLLECTION, docId);
+  await deleteDoc(docRef);
+}
+
+export async function directAddApprovedUser(
+  email: string,
+  approvedBy?: string,
+  displayName?: string
+): Promise<AppUser> {
+  const normEmail = email.toLowerCase().trim();
+  const docId = emailToDocId(normEmail);
+  const docRef = doc(db, USER_ACCESS_COLLECTION, docId);
+  const now = Date.now();
+
+  const record: AppUser = {
+    id: docId,
+    email: normEmail,
+    displayName: displayName || '',
+    status: 'approved',
+    requested_at: now,
+    updated_at: now,
+    approved_by: approvedBy || 'Admin',
+  };
+
+  await setDoc(docRef, record);
+  return record;
+}
+
 
 export async function fetchShops(): Promise<Shop[]> {
   const colRef = collection(db, SHOPS_COLLECTION);

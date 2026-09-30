@@ -14,12 +14,18 @@ import {
 } from 'lucide-react';
 import { User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
-import { Shop } from './types';
-import { fetchShops, clearAllShopsAndTransactions } from './dataService';
+import { Shop, AppUser } from './types';
+import { 
+  fetchShops, 
+  clearAllShopsAndTransactions, 
+  fetchUserAccessRecord, 
+  requestUserAccess 
+} from './dataService';
 import { SearchPage } from './components/SearchPage';
 import { ShopDetailsPage } from './components/ShopDetailsPage';
 import { StoreInfoPage } from './components/StoreInfoPage';
 import { AuthModal } from './components/AuthModal';
+import { AccessGateModal } from './components/AccessGateModal';
 import { 
   AdminPasswordGate, 
   isLocalAdminAuthenticated, 
@@ -34,6 +40,10 @@ export default function App() {
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // User permission / access whitelist state
+  const [userAccess, setUserAccess] = useState<AppUser | null>(null);
+  const [checkingAccess, setCheckingAccess] = useState(false);
 
   // Admin access state
   const [isAdmin, setIsAdmin] = useState<boolean>(() => isLocalAdminAuthenticated());
@@ -135,7 +145,7 @@ export default function App() {
     }
   };
 
-  // Load shops from Firestore once authenticated
+  // Load shops from Firestore once authenticated and permitted
   const loadShops = async () => {
     if (!currentUser) return;
     try {
@@ -156,11 +166,49 @@ export default function App() {
     }
   };
 
+  // Check user permission whitelist status
+  const checkUserAccess = async (user: User) => {
+    try {
+      setCheckingAccess(true);
+      if (user.email) {
+        const record = await fetchUserAccessRecord(user.email);
+        setUserAccess(record);
+      }
+    } catch (err: any) {
+      console.error('Failed to check user access record:', err);
+    } finally {
+      setCheckingAccess(false);
+    }
+  };
+
   useEffect(() => {
     if (currentUser) {
-      loadShops();
+      checkUserAccess(currentUser);
+    } else {
+      setUserAccess(null);
     }
   }, [currentUser]);
+
+  // Load shops if user is either permitted as approved user OR is local admin
+  const isPermittedUser = userAccess?.status === 'approved' || isAdmin;
+
+  useEffect(() => {
+    if (currentUser && isPermittedUser) {
+      loadShops();
+    }
+  }, [currentUser, isPermittedUser]);
+
+  const handleRequestAccess = async (note: string) => {
+    if (!currentUser || !currentUser.email) return;
+    const rec = await requestUserAccess({
+      email: currentUser.email,
+      uid: currentUser.uid,
+      displayName: currentUser.displayName || undefined,
+      photoURL: currentUser.photoURL || undefined,
+      request_note: note,
+    });
+    setUserAccess(rec);
+  };
 
   const handleSelectShop = (shop: Shop) => {
     setSelectedShop(shop);
@@ -199,6 +247,43 @@ export default function App() {
         isLoading={isLoggingIn}
         error={authError}
       />
+    );
+  }
+
+  // Permission Whitelist Gate: Only approved Google accounts (or active admin) can use the app
+  if (!isPermittedUser) {
+    return (
+      <>
+        <AccessGateModal
+          currentUser={currentUser}
+          accessRecord={userAccess}
+          onRequestAccess={handleRequestAccess}
+          onCheckStatus={async () => {
+            await checkUserAccess(currentUser);
+          }}
+          onSignOut={handleSignOut}
+          onOpenAdmin={() => {
+            setShowAdminLogin(true);
+          }}
+        />
+
+        {showAdminLogin && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <div className="w-full max-w-md">
+              <AdminPasswordGate
+                onSuccess={() => {
+                  setIsAdmin(true);
+                  setShowAdminLogin(false);
+                  setActiveTab('store_info');
+                }}
+                onCancel={() => {
+                  setShowAdminLogin(false);
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -393,6 +478,7 @@ export default function App() {
               /* View 3: Store Information Page (Only for authenticated admin) */
               <StoreInfoPage
                 shops={shops}
+                currentUserEmail={currentUser.email || ''}
                 onRefreshShops={loadShops}
                 onViewShop={(shop) => {
                   setSelectedShop(shop);

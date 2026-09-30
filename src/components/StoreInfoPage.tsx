@@ -11,14 +11,17 @@ import {
   Phone,
   MapPin,
   CheckCircle2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Users
 } from 'lucide-react';
 import { Shop, FloorLocation, MULTIPLAN_FLOORS } from '../types';
 import { createShop, updateShop, deleteShopWithTransactions } from '../dataService';
 import { AdminActionPasswordModal } from './AdminActionPasswordModal';
+import { UserAccessManagementTab } from './UserAccessManagementTab';
 
 interface StoreInfoPageProps {
   shops: Shop[];
+  currentUserEmail?: string;
   onRefreshShops: () => Promise<void>;
   onViewShop: (shop: Shop) => void;
   initialEditingShop?: Shop | null;
@@ -27,11 +30,15 @@ interface StoreInfoPageProps {
 
 export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
   shops,
+  currentUserEmail = '',
   onRefreshShops,
   onViewShop,
   initialEditingShop = null,
   onClearInitialEditingShop,
 }) => {
+  // Admin secondary navigation tab
+  const [adminTab, setAdminTab] = useState<'shops' | 'users'>('shops');
+
   // Form visibility / mode
   const [showForm, setShowForm] = useState(!!initialEditingShop);
   const [editingShop, setEditingShop] = useState<Shop | null>(initialEditingShop);
@@ -282,30 +289,76 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-        <div>
-          <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400">
-            Database Management
-          </span>
-          <h2 className="text-2xl font-bold text-white mt-1">
-            Store Information
-          </h2>
-          <p className="text-sm text-neutral-400 mt-1">
-            Add, update, or remove shops located inside Multiplan Center.
-          </p>
-        </div>
+      {/* Top Header with Tab Switcher */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400">
+              Admin Control Center
+            </span>
+            <h2 className="text-2xl font-bold text-white mt-1">
+              Store &amp; Access Management
+            </h2>
+            <p className="text-xs text-neutral-400 mt-1">
+              Multiplan Center directory control, store records, and user whitelist permissions.
+            </p>
+          </div>
 
-        {!showForm && (
-          <button
-            onClick={handleOpenAdd}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Add New Shop
-          </button>
-        )}
+          {/* Sub Navigation between Store Directory and User Access */}
+          <div className="flex items-center gap-1.5 p-1 bg-neutral-950 rounded-lg border border-neutral-800">
+            <button
+              onClick={() => {
+                setAdminTab('shops');
+                setShowForm(false);
+              }}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                adminTab === 'shops'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Shops Directory ({shops.length})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setAdminTab('users');
+                setShowForm(false);
+              }}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                adminTab === 'users'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>User Permissions &amp; Requests</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* View Branching: User Access Tab vs Shops Tab */}
+      {adminTab === 'users' ? (
+        <UserAccessManagementTab currentUserEmail={currentUserEmail} />
+      ) : (
+        <>
+          {/* Top action bar when on Shops tab */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-white">
+              Multiplan Center Shop Records ({displayedShops.length} of {shops.length})
+            </div>
+            {!showForm && (
+              <button
+                onClick={handleOpenAdd}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors shadow-sm cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                Add New Shop
+              </button>
+            )}
+          </div>
 
       {statusMessage && (
         <div className="p-3.5 bg-emerald-950/60 border border-emerald-800/80 rounded-lg text-emerald-300 text-sm flex items-center gap-2">
@@ -706,6 +759,9 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+        </>
       )}
 
       {/* Admin Action Password Confirmation Modal */}
