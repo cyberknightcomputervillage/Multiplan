@@ -262,9 +262,6 @@ export default function App() {
             await checkUserAccess(currentUser);
           }}
           onSignOut={handleSignOut}
-          onOpenAdmin={() => {
-            setShowAdminLogin(true);
-          }}
         />
 
         {showAdminLogin && (

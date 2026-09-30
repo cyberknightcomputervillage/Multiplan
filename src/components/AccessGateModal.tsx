@@ -7,9 +7,8 @@ import {
   LogOut, 
   CheckCircle2, 
   Ban, 
-  RefreshCw,
-  Mail,
-  UserCheck
+  RefreshCw, 
+  Mail 
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { AppUser } from '../types';
@@ -20,7 +19,6 @@ interface AccessGateModalProps {
   onRequestAccess: (note: string) => Promise<void>;
   onCheckStatus: () => Promise<void>;
   onSignOut: () => void;
-  onOpenAdmin: () => void;
 }
 
 export const AccessGateModal: React.FC<AccessGateModalProps> = ({
@@ -29,7 +27,6 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({
   onRequestAccess,
   onCheckStatus,
   onSignOut,
-  onOpenAdmin,
 }) => {
   const [requestNote, setRequestNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -162,33 +159,26 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({
 
         {/* Action Controls */}
         <div className="mt-6 pt-5 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-          {(status === 'pending' || submittedJustNow) && (
+          {(status === 'pending' || submittedJustNow) ? (
             <button
               onClick={handleRefresh}
               disabled={isChecking}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin text-emerald-400' : ''}`} />
               Check Approval Status
             </button>
+          ) : (
+            <div />
           )}
 
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
-            <button
-              onClick={onOpenAdmin}
-              className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-amber-400 hover:text-amber-300 hover:bg-neutral-800 rounded-lg transition-colors cursor-pointer"
-              title="Open Admin Panel"
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              Admin Login
-            </button>
-
             <button
               onClick={onSignOut}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-red-300 rounded-lg text-xs font-medium transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Sign Out
+              Sign Out / Switch Account
             </button>
           </div>
         </div>
