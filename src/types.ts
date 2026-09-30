@@ -12,6 +12,7 @@ export interface Shop {
   phone?: string;
   logo?: string;
   notes?: string;
+  tags?: string[]; // Product tags, categories, remarks (e.g. CPU, Motherboard, GPU, RAM, Laptop, Monitor)
   created_at: number;
   updated_at: number;
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Phone, Building2, ExternalLink, X, Plus } from 'lucide-react';
+import { Search, MapPin, Phone, Building2, ExternalLink, X, Plus, Tag } from 'lucide-react';
 import { Shop } from '../types';
 import { fuzzySearchShops } from '../fuzzySearch';
 
@@ -22,6 +22,20 @@ export const SearchPage: React.FC<SearchPageProps> = ({
 
   const filteredShops = fuzzySearchShops(shops, searchQuery);
 
+  // Quick product tags to filter or search easily
+  const QUICK_TAG_FILTERS = [
+    'CPU',
+    'Motherboard',
+    'GPU',
+    'RAM',
+    'SSD',
+    'Laptop',
+    'Monitor',
+    'Casing',
+    'Power Supply',
+    'Printer',
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header & Big Search Bar */}
@@ -35,7 +49,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
               Search Multiplan Center Shops
             </h2>
             <p className="text-sm text-neutral-400 mt-1.5">
-              Instant typo-tolerant search across shop names, shop numbers, floors, or phone numbers.
+              Instant typo-tolerant search across shop names, products (CPU, Motherboard, etc.), shop numbers, floors, or remarks.
             </p>
           </div>
 
@@ -59,19 +73,44 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by shop name, number, phone... (e.g. 'mr', 'M.R', 'computer', '512')"
+            placeholder="Search by shop name, product tag (CPU, Motherboard, GPU...), floor, or remarks..."
             autoFocus
             className="w-full pl-12 pr-10 py-3.5 bg-neutral-950/80 border border-neutral-700/80 rounded-lg text-white text-base placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-white"
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-white cursor-pointer"
               title="Clear search"
             >
               <X className="w-5 h-5" />
             </button>
           )}
+        </div>
+
+        {/* Quick Product Tag Buttons */}
+        <div className="mt-3.5 flex flex-wrap items-center gap-1.5 pt-3 border-t border-neutral-800/60">
+          <span className="text-xs text-neutral-400 font-medium flex items-center gap-1 mr-1">
+            <Tag className="w-3.5 h-3.5 text-emerald-400" />
+            Filter by Product:
+          </span>
+          {QUICK_TAG_FILTERS.map((tag) => {
+            const isActive = searchQuery.toLowerCase().trim() === tag.toLowerCase();
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setSearchQuery(isActive ? '' : tag)}
+                className={`text-xs px-2.5 py-1 rounded-md transition-all cursor-pointer border ${
+                  isActive
+                    ? 'bg-emerald-500 text-neutral-950 font-bold border-emerald-400 shadow-sm'
+                    : 'bg-neutral-950/90 text-neutral-300 border-neutral-800 hover:border-emerald-500/50 hover:text-white'
+                }`}
+              >
+                {tag}
+              </button>
+            );
+          })}
         </div>
 
         {/* Quick Helper / Query state */}
@@ -80,6 +119,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             {searchQuery ? (
               <span>
                 Found <span className="text-emerald-400 font-semibold">{filteredShops.length}</span> matching {filteredShops.length === 1 ? 'shop' : 'shops'}
+                {` for "${searchQuery}"`}
               </span>
             ) : (
               <span>Showing all <span className="text-neutral-200 font-medium">{shops.length}</span> shops in Multiplan Center</span>
@@ -87,7 +127,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
           </div>
           {searchQuery && (
             <span className="text-neutral-500 italic">
-              Case &amp; dot/punctuation insensitive, typo-tolerant (e.g. &quot;mr&quot; finds &quot;M.R&quot;, &quot;computr&quot; finds &quot;Computer&quot;)
+              Searches across shop name, product tags (CPU, Motherboard), remarks &amp; floor
             </span>
           )}
         </div>
@@ -105,7 +145,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
               ? (isAdmin 
                   ? 'The directory is completely empty. Start by adding your first Multiplan Center shop.' 
                   : 'The directory is currently empty. Shops will appear here once added by the administrator.')
-              : `No shops matched "${searchQuery}".`}
+              : `No shops matched product or keyword "${searchQuery}".`}
           </p>
           {(isAdmin || canEditShop) && (
             <button
@@ -177,8 +217,34 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                   </div>
                 </div>
 
+                {/* Product Tags / Items preview on card */}
+                {shop.tags && shop.tags.length > 0 && (
+                  <div className="mt-3 pt-2.5 border-t border-neutral-800/70 flex flex-wrap gap-1">
+                    {shop.tags.slice(0, 5).map((t, idx) => {
+                      const isHighlighted = searchQuery && t.toLowerCase().includes(searchQuery.toLowerCase().trim());
+                      return (
+                        <span
+                          key={idx}
+                          className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                            isHighlighted
+                              ? 'bg-emerald-500 text-neutral-950 font-bold'
+                              : 'bg-neutral-800/80 text-emerald-300 border border-emerald-500/20'
+                          }`}
+                        >
+                          {t}
+                        </span>
+                      );
+                    })}
+                    {shop.tags.length > 5 && (
+                      <span className="text-[10px] px-1 text-neutral-500 self-center">
+                        +{shop.tags.length - 5}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {shop.notes && (
-                  <p className="text-xs text-neutral-400 mt-3.5 line-clamp-2 bg-neutral-950/40 p-2 rounded border border-neutral-800/50">
+                  <p className="text-xs text-neutral-400 mt-2.5 line-clamp-2 bg-neutral-950/40 p-2 rounded border border-neutral-800/50">
                     {shop.notes}
                   </p>
                 )}

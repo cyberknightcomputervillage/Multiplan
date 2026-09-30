@@ -21,6 +21,10 @@
         "phone": { "type": "string" },
         "logo": { "type": "string" },
         "notes": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "created_at": { "type": "number" },
         "updated_at": { "type": "number" }
       },

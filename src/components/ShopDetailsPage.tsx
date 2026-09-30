@@ -17,7 +17,8 @@ import {
   Package,
   Layers,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Tag
 } from 'lucide-react';
 import { Shop, ShopTransaction, TransactionType, TransactionItem } from '../types';
 import { 
@@ -356,8 +357,28 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
               )}
             </div>
 
+            {/* Product Tags / Items Offered */}
+            {shop.tags && shop.tags.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-neutral-800/80">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-neutral-400 flex items-center gap-1 mr-1">
+                    <Tag className="w-3.5 h-3.5 text-emerald-400" />
+                    Products:
+                  </span>
+                  {shop.tags.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {shop.notes && (
-              <p className="text-sm text-neutral-400 mt-3 pt-3 border-t border-neutral-800/80">
+              <p className="text-sm text-neutral-400 mt-2.5 pt-2.5 border-t border-neutral-800/80">
                 <span className="text-neutral-500 font-medium mr-1.5">Notes:</span>
                 {shop.notes}
               </p>

@@ -217,6 +217,7 @@ export async function fetchShops(): Promise<Shop[]> {
       phone: data.phone || '',
       logo: data.logo || '',
       notes: data.notes || '',
+      tags: Array.isArray(data.tags) ? data.tags : undefined,
       created_at: data.created_at || 0,
       updated_at: data.updated_at || 0,
     });
@@ -235,6 +236,7 @@ export async function createShop(data: Omit<Shop, 'id' | 'created_at' | 'updated
     phone: (data.phone || '').trim(),
     logo: data.logo || '',
     notes: (data.notes || '').trim(),
+    tags: Array.isArray(data.tags) ? data.tags : [],
     created_at: now,
     updated_at: now,
   };
@@ -253,6 +255,7 @@ export async function createShop(data: Omit<Shop, 'id' | 'created_at' | 'updated
     phone: (data.phone || '').trim(),
     logo: data.logo || '',
     notes: (data.notes || '').trim(),
+    tags: Array.isArray(data.tags) ? data.tags : [],
     created_at: now,
     updated_at: now,
   };

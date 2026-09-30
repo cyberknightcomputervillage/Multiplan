@@ -171,6 +171,14 @@ export function fuzzySearchShops(shops: Shop[], query: string): Shop[] {
     const phoneNorm = normalize(shop.phone || '');
     const phoneDigits = (shop.phone || '').replace(/\D/g, '');
 
+    // Product tags & remarks/notes
+    const tagsArray = Array.isArray(shop.tags) ? shop.tags : [];
+    const tagsNorm = normalize(tagsArray.join(' '));
+    const tagsCompact = compactAlphanumeric(tagsArray.join(' '));
+
+    const notesNorm = normalize(shop.notes || '');
+    const notesCompact = compactAlphanumeric(shop.notes || '');
+
     // 1. Direct compact match for acronyms/dots (e.g. "M.R" -> "mr" matches "mr", "M.R", "M R")
     if (compactQuery.length > 0) {
       if (nameCompact === compactQuery) {
@@ -188,6 +196,15 @@ export function fuzzySearchShops(shops: Shop[], query: string): Shop[] {
         totalScore += 200;
         matchedAnyField = true;
       }
+
+      // Check tags and remarks for compact matches (e.g. "gpu", "cpu", "motherboard", "ram")
+      if (tagsCompact.includes(compactQuery)) {
+        totalScore += 280;
+        matchedAnyField = true;
+      } else if (notesCompact.includes(compactQuery)) {
+        totalScore += 240;
+        matchedAnyField = true;
+      }
     }
 
     // 2. Direct normalized full string match
@@ -196,6 +213,15 @@ export function fuzzySearchShops(shops: Shop[], query: string): Shop[] {
       matchedAnyField = true;
     } else if (nameNorm.includes(normalizedQuery)) {
       totalScore += 180;
+      matchedAnyField = true;
+    }
+
+    // Direct match inside tags or remarks
+    if (tagsNorm.includes(normalizedQuery)) {
+      totalScore += 260;
+      matchedAnyField = true;
+    } else if (notesNorm.includes(normalizedQuery)) {
+      totalScore += 220;
       matchedAnyField = true;
     }
 
@@ -214,10 +240,12 @@ export function fuzzySearchShops(shops: Shop[], query: string): Shop[] {
       matchedAnyField = true;
     }
 
-    // 5. Evaluate individual tokens (handles multi-word and typos)
+    // 5. Evaluate individual tokens (handles multi-word, tags, notes, and typos)
     const nameWords = nameNorm.split(' ').filter(Boolean);
     const floorWords = floorNorm.split(' ').filter(Boolean);
     const shopNumWords = shopNumNorm.split(' ').filter(Boolean);
+    const tagWords = tagsNorm.split(' ').filter(Boolean);
+    const noteWords = notesNorm.split(' ').filter(Boolean);
 
     let tokenMatchesCount = 0;
 
@@ -238,6 +266,22 @@ export function fuzzySearchShops(shops: Shop[], query: string): Shop[] {
         const res = tokenMatchesWord(qToken, w);
         if (res.matches && res.score > bestTokenScore) {
           bestTokenScore = res.score * 1.5;
+        }
+      }
+
+      // Check product tags words (high priority for product search like CPU, Motherboard)
+      for (const w of tagWords) {
+        const res = tokenMatchesWord(qToken, w);
+        if (res.matches && res.score * 1.4 > bestTokenScore) {
+          bestTokenScore = res.score * 1.4;
+        }
+      }
+
+      // Check notes / remarks words
+      for (const w of noteWords) {
+        const res = tokenMatchesWord(qToken, w);
+        if (res.matches && res.score * 1.25 > bestTokenScore) {
+          bestTokenScore = res.score * 1.25;
         }
       }
 
