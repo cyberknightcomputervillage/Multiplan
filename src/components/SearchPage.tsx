@@ -19,8 +19,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
   onNavigateToStoreInfo,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredShops = fuzzySearchShops(shops, searchQuery);
+  const [selectedProductFilter, setSelectedProductFilter] = useState<string | null>(null);
 
   // Quick product tags to filter or search easily
   const QUICK_TAG_FILTERS = [
@@ -35,6 +34,33 @@ export const SearchPage: React.FC<SearchPageProps> = ({
     'Power Supply',
     'Printer',
   ];
+
+  // 1. If a strict product filter is active, only include shops that have that product tag OR have it in remarks/notes
+  const filteredByProductTag = selectedProductFilter
+    ? shops.filter((shop) => {
+        const prod = selectedProductFilter.toLowerCase();
+        // Check tags array
+        const hasInTags = Array.isArray(shop.tags) && shop.tags.some((t) => {
+          const tLower = t.toLowerCase();
+          return tLower === prod || tLower.includes(prod) || prod.includes(tLower);
+        });
+        if (hasInTags) return true;
+
+        // Check notes/remarks
+        if (shop.notes) {
+          const notesLower = shop.notes.toLowerCase();
+          // Word boundary or containment check
+          if (notesLower.includes(prod)) return true;
+        }
+
+        return false;
+      })
+    : shops;
+
+  // 2. Then apply fuzzy search (with support for merged words like "startech")
+  const filteredShops = searchQuery.trim()
+    ? fuzzySearchShops(filteredByProductTag, searchQuery)
+    : filteredByProductTag;
 
   return (
     <div className="space-y-6">
@@ -95,39 +121,59 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             Filter by Product:
           </span>
           {QUICK_TAG_FILTERS.map((tag) => {
-            const isActive = searchQuery.toLowerCase().trim() === tag.toLowerCase();
+            const isActive = selectedProductFilter?.toLowerCase() === tag.toLowerCase();
             return (
               <button
                 key={tag}
                 type="button"
-                onClick={() => setSearchQuery(isActive ? '' : tag)}
+                onClick={() => {
+                  if (isActive) {
+                    setSelectedProductFilter(null);
+                  } else {
+                    setSelectedProductFilter(tag);
+                  }
+                }}
                 className={`text-xs px-2.5 py-1 rounded-md transition-all cursor-pointer border ${
                   isActive
-                    ? 'bg-emerald-500 text-neutral-950 font-bold border-emerald-400 shadow-sm'
+                    ? 'bg-emerald-500 text-neutral-950 font-bold border-emerald-400 shadow-sm ring-1 ring-emerald-400'
                     : 'bg-neutral-950/90 text-neutral-300 border-neutral-800 hover:border-emerald-500/50 hover:text-white'
                 }`}
               >
-                {tag}
+                {isActive ? `✓ ${tag}` : tag}
               </button>
             );
           })}
+          {selectedProductFilter && (
+            <button
+              type="button"
+              onClick={() => setSelectedProductFilter(null)}
+              className="text-xs px-2 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white border border-neutral-700 transition-colors ml-1 cursor-pointer flex items-center gap-1"
+            >
+              <X className="w-3 h-3" />
+              Clear Product Filter
+            </button>
+          )}
         </div>
 
         {/* Quick Helper / Query state */}
         <div className="flex flex-wrap items-center justify-between text-xs text-neutral-400 mt-3 pt-2 border-t border-neutral-800/60">
           <div>
-            {searchQuery ? (
-              <span>
-                Found <span className="text-emerald-400 font-semibold">{filteredShops.length}</span> matching {filteredShops.length === 1 ? 'shop' : 'shops'}
-                {` for "${searchQuery}"`}
-              </span>
-            ) : (
-              <span>Showing all <span className="text-neutral-200 font-medium">{shops.length}</span> shops in Multiplan Center</span>
-            )}
+            <span>
+              Found <span className="text-emerald-400 font-semibold">{filteredShops.length}</span> matching {filteredShops.length === 1 ? 'shop' : 'shops'}
+              {selectedProductFilter && (
+                <span> with product <strong className="text-emerald-300 font-semibold">&ldquo;{selectedProductFilter}&rdquo;</strong></span>
+              )}
+              {searchQuery && (
+                <span> for <strong className="text-white font-semibold">&ldquo;{searchQuery}&rdquo;</strong></span>
+              )}
+              {!selectedProductFilter && !searchQuery && (
+                <span> in Multiplan Center</span>
+              )}
+            </span>
           </div>
-          {searchQuery && (
+          {(searchQuery || selectedProductFilter) && (
             <span className="text-neutral-500 italic">
-              Searches across shop name, product tags (CPU, Motherboard), remarks &amp; floor
+              Searches shop names (with or without spaces like &quot;startech&quot;), product tags &amp; remarks
             </span>
           )}
         </div>
@@ -138,23 +184,36 @@ export const SearchPage: React.FC<SearchPageProps> = ({
         <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl p-12 text-center">
           <Building2 className="w-12 h-12 text-neutral-600 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-white">
-            {shops.length === 0 ? 'No shops in directory yet' : 'No shops found'}
+            {shops.length === 0 ? 'No shops in directory yet' : 'No matching shops found'}
           </h3>
           <p className="text-sm text-neutral-400 mt-1 max-w-md mx-auto">
             {shops.length === 0
               ? (isAdmin 
                   ? 'The directory is completely empty. Start by adding your first Multiplan Center shop.' 
                   : 'The directory is currently empty. Shops will appear here once added by the administrator.')
-              : `No shops matched product or keyword "${searchQuery}".`}
+              : `No shops match ${selectedProductFilter ? `product "${selectedProductFilter}"` : ''}${selectedProductFilter && searchQuery ? ' and ' : ''}${searchQuery ? `query "${searchQuery}"` : ''}.`}
           </p>
-          {(isAdmin || canEditShop) && (
-            <button
-              onClick={onNavigateToStoreInfo}
-              className="mt-5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
-            >
-              Add New Shop
-            </button>
-          )}
+          <div className="mt-4 flex items-center justify-center gap-2">
+            {(selectedProductFilter || searchQuery) && (
+              <button
+                onClick={() => {
+                  setSelectedProductFilter(null);
+                  setSearchQuery('');
+                }}
+                className="px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+            )}
+            {(isAdmin || canEditShop) && (
+              <button
+                onClick={onNavigateToStoreInfo}
+                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Add New Shop
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -221,18 +280,25 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                 {shop.tags && shop.tags.length > 0 && (
                   <div className="mt-3 pt-2.5 border-t border-neutral-800/70 flex flex-wrap gap-1">
                     {shop.tags.slice(0, 5).map((t, idx) => {
-                      const isHighlighted = searchQuery && t.toLowerCase().includes(searchQuery.toLowerCase().trim());
+                      const isHighlighted = (searchQuery && t.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
+                        (selectedProductFilter && t.toLowerCase().includes(selectedProductFilter.toLowerCase().trim()));
                       return (
-                        <span
+                        <button
                           key={idx}
-                          className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedProductFilter((prev) => (prev?.toLowerCase() === t.toLowerCase() ? null : t));
+                          }}
+                          className={`text-[10px] px-2 py-0.5 rounded font-medium transition-colors cursor-pointer ${
                             isHighlighted
                               ? 'bg-emerald-500 text-neutral-950 font-bold'
-                              : 'bg-neutral-800/80 text-emerald-300 border border-emerald-500/20'
+                              : 'bg-neutral-800/80 text-emerald-300 border border-emerald-500/20 hover:bg-neutral-700'
                           }`}
+                          title={`Filter by product "${t}"`}
                         >
                           {t}
-                        </span>
+                        </button>
                       );
                     })}
                     {shop.tags.length > 5 && (

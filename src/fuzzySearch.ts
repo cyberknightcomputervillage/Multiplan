@@ -185,8 +185,20 @@ export function fuzzySearchShops(shops: Shop[], query: string): Shop[] {
         totalScore += 350;
         matchedAnyField = true;
       } else if (nameCompact.includes(compactQuery)) {
-        totalScore += 220;
+        totalScore += 260;
         matchedAnyField = true;
+      } else if (compactQuery.includes(nameCompact) && nameCompact.length >= 3) {
+        totalScore += 240;
+        matchedAnyField = true;
+      } else {
+        // Also check fuzzy distance on compact strings for merged terms (e.g. "startech" vs "startech" or "starteck")
+        if (compactQuery.length >= 4 && nameCompact.length >= 4) {
+          const compactDist = levenshteinDistance(compactQuery, nameCompact);
+          if (compactDist <= (compactQuery.length <= 6 ? 1 : 2)) {
+            totalScore += 230 - compactDist * 30;
+            matchedAnyField = true;
+          }
+        }
       }
 
       if (shopNumCompact === compactQuery) {
