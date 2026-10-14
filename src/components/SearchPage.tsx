@@ -68,16 +68,16 @@ export const SearchPage: React.FC<SearchPageProps> = ({
   return (
     <div className="space-y-6">
       {/* Header & Big Search Bar */}
-      <div className="bg-neutral-900/90 border border-neutral-800 rounded-xl p-6 sm:p-8 backdrop-blur shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <div className="bg-neutral-900/90 border border-neutral-800 rounded-xl p-4 sm:p-8 backdrop-blur shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
           <div className="max-w-2xl">
-            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400">
+            <span className="text-[11px] sm:text-xs font-semibold tracking-wider uppercase text-emerald-400">
               Multiplan Center • Dhaka
             </span>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
+            <h2 className="text-xl sm:text-3xl font-bold tracking-tight text-white mt-0.5 sm:mt-1">
               Search Multiplan Center Shops
             </h2>
-            <p className="text-sm text-neutral-400 mt-1.5">
+            <p className="text-xs sm:text-sm text-neutral-400 mt-1 sm:mt-1.5 leading-relaxed">
               Instant typo-tolerant search across shop names, products (CPU, Motherboard, etc.), shop numbers, floors, or remarks.
             </p>
           </div>
@@ -85,7 +85,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
           {(isAdmin || canEditShop) && (
             <button
               onClick={onNavigateToStoreInfo}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow cursor-pointer flex-shrink-0 self-start sm:self-auto"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow cursor-pointer flex-shrink-0 w-full sm:w-auto"
             >
               <Plus className="w-4 h-4" />
               Add New Shop
@@ -94,22 +94,22 @@ export const SearchPage: React.FC<SearchPageProps> = ({
         </div>
 
         {/* Large Search Input */}
-        <div className="relative mt-6">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-400">
-            <Search className="w-5 h-5" />
+        <div className="relative mt-4 sm:mt-6">
+          <div className="absolute inset-y-0 left-0 pl-3.5 sm:pl-4 flex items-center pointer-events-none text-neutral-400">
+            <Search className="w-5 h-5 text-neutral-400" />
           </div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by shop name, product tag (CPU, Motherboard, GPU...), floor, or remarks..."
+            placeholder="Search shop, CPU, GPU, floor, remarks..."
             autoFocus
-            className="w-full pl-12 pr-10 py-3.5 bg-neutral-950/80 border border-neutral-700/80 rounded-lg text-white text-base placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner"
+            className="w-full pl-11 sm:pl-12 pr-12 py-3 sm:py-3.5 bg-neutral-950/90 border border-neutral-700/80 rounded-xl text-white text-base placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner touch-manipulation"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-white cursor-pointer"
+              className="absolute inset-y-0 right-0 pr-3 sm:pr-3.5 w-12 flex items-center justify-center text-neutral-400 hover:text-white active:text-emerald-400 transition-colors cursor-pointer touch-manipulation"
               title="Clear search"
             >
               <X className="w-5 h-5" />
@@ -117,49 +117,52 @@ export const SearchPage: React.FC<SearchPageProps> = ({
           )}
         </div>
 
-        {/* Quick Product Tag Buttons */}
-        <div className="mt-3.5 flex flex-wrap items-center gap-1.5 pt-3 border-t border-neutral-800/60">
-          <span className="text-xs text-neutral-400 font-medium flex items-center gap-1 mr-1">
-            <Tag className="w-3.5 h-3.5 text-emerald-400" />
-            Filter by Product:
-          </span>
-          {QUICK_TAG_FILTERS.map((tag) => {
-            const isActive = selectedProductFilter?.toLowerCase() === tag.toLowerCase();
-            return (
+        {/* Quick Product Tag Buttons - Smooth Touch-friendly Swipe Bar */}
+        <div className="mt-3.5 pt-3 border-t border-neutral-800/60 relative">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1.5 -mx-1 px-1 touch-pan-x">
+            <span className="text-xs text-neutral-400 font-semibold flex items-center gap-1.5 flex-shrink-0 mr-1 select-none">
+              <Tag className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Products:</span>
+            </span>
+            {QUICK_TAG_FILTERS.map((tag) => {
+              const isActive = selectedProductFilter?.toLowerCase() === tag.toLowerCase();
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    if (isActive) {
+                      setSelectedProductFilter(null);
+                    } else {
+                      setSelectedProductFilter(tag);
+                    }
+                  }}
+                  className={`text-xs px-3 py-1.5 min-h-[34px] sm:min-h-[32px] rounded-lg transition-all cursor-pointer border whitespace-nowrap flex-shrink-0 touch-manipulation flex items-center gap-1 ${
+                    isActive
+                      ? 'bg-emerald-500 text-neutral-950 font-bold border-emerald-400 shadow-md ring-1 ring-emerald-400'
+                      : 'bg-neutral-950/90 text-neutral-300 border-neutral-800 hover:border-emerald-500/50 active:bg-neutral-800 active:text-white'
+                  }`}
+                >
+                  {isActive && <span>✓</span>}
+                  <span>{tag}</span>
+                </button>
+              );
+            })}
+            {selectedProductFilter && (
               <button
-                key={tag}
                 type="button"
-                onClick={() => {
-                  if (isActive) {
-                    setSelectedProductFilter(null);
-                  } else {
-                    setSelectedProductFilter(tag);
-                  }
-                }}
-                className={`text-xs px-2.5 py-1 rounded-md transition-all cursor-pointer border ${
-                  isActive
-                    ? 'bg-emerald-500 text-neutral-950 font-bold border-emerald-400 shadow-sm ring-1 ring-emerald-400'
-                    : 'bg-neutral-950/90 text-neutral-300 border-neutral-800 hover:border-emerald-500/50 hover:text-white'
-                }`}
+                onClick={() => setSelectedProductFilter(null)}
+                className="text-xs px-3 py-1.5 min-h-[34px] sm:min-h-[32px] rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-200 hover:text-white border border-neutral-700 transition-colors flex-shrink-0 cursor-pointer flex items-center gap-1.5 touch-manipulation font-medium shadow-sm"
               >
-                {isActive ? `✓ ${tag}` : tag}
+                <X className="w-3.5 h-3.5" />
+                <span>Clear</span>
               </button>
-            );
-          })}
-          {selectedProductFilter && (
-            <button
-              type="button"
-              onClick={() => setSelectedProductFilter(null)}
-              className="text-xs px-2 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white border border-neutral-700 transition-colors ml-1 cursor-pointer flex items-center gap-1"
-            >
-              <X className="w-3 h-3" />
-              Clear Product Filter
-            </button>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Quick Helper / Query state */}
-        <div className="flex flex-wrap items-center justify-between text-xs text-neutral-400 mt-3 pt-2 border-t border-neutral-800/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-neutral-400 mt-2.5 pt-2 border-t border-neutral-800/60">
           <div>
             <span>
               Found <span className="text-emerald-400 font-semibold">{filteredShops.length}</span> matching {filteredShops.length === 1 ? 'shop' : 'shops'}
@@ -221,15 +224,15 @@ export const SearchPage: React.FC<SearchPageProps> = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredShops.map((shop: Shop) => (
             <div
               key={shop.id}
               onClick={() => onSelectShop(shop)}
-              className="group bg-neutral-900/80 hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-5 cursor-pointer transition-all duration-150 flex flex-col justify-between shadow-sm hover:shadow-md hover:border-emerald-500/30"
+              className="group bg-neutral-900/90 hover:bg-neutral-900 active:bg-neutral-850 border border-neutral-800 hover:border-neutral-700 active:border-emerald-500/50 rounded-xl p-4 sm:p-5 cursor-pointer transition-all duration-150 flex flex-col justify-between shadow-sm hover:shadow-md hover:border-emerald-500/30 touch-manipulation active:scale-[0.99]"
             >
               <div>
-                <div className="flex items-start gap-3.5">
+                <div className="flex items-start gap-3 sm:gap-3.5">
                   {/* Shop Logo if available */}
                   {shop.logo ? (
                     <img
@@ -238,16 +241,16 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
-                      className="w-12 h-12 rounded-lg object-cover border border-neutral-700/60 flex-shrink-0 bg-neutral-800"
+                      className="w-12 h-12 rounded-xl object-cover border border-neutral-700/60 flex-shrink-0 bg-neutral-800 shadow-sm"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-neutral-800/80 border border-neutral-700/50 flex items-center justify-center flex-shrink-0 text-neutral-400 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-colors">
+                    <div className="w-12 h-12 rounded-xl bg-neutral-800/80 border border-neutral-700/50 flex items-center justify-center flex-shrink-0 text-neutral-400 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-colors shadow-sm">
                       <Building2 className="w-6 h-6" />
                     </div>
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">
+                    <h3 className="text-base font-bold text-white truncate group-hover:text-emerald-400 transition-colors">
                       {shop.name}
                     </h3>
                     <div className="text-xs text-neutral-300 mt-1 font-medium space-y-1">
@@ -273,9 +276,16 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                     </div>
 
                     {shop.phone && (
-                      <div className="flex items-center gap-1.5 text-xs text-neutral-400 mt-1.5">
-                        <Phone className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
-                        <span className="truncate">{shop.phone}</span>
+                      <div className="mt-2">
+                        <a
+                          href={`tel:${shop.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-950/80 hover:bg-emerald-950/60 active:bg-emerald-900/80 text-emerald-400 border border-neutral-800 hover:border-emerald-500/40 text-xs font-semibold transition-colors touch-manipulation group/phone"
+                          title="Call shop directly"
+                        >
+                          <Phone className="w-3 h-3 text-emerald-400 group-hover/phone:animate-bounce" />
+                          <span>{shop.phone}</span>
+                        </a>
                       </div>
                     )}
                   </div>
@@ -283,8 +293,8 @@ export const SearchPage: React.FC<SearchPageProps> = ({
 
                 {/* Product Tags / Items preview on card */}
                 {shop.tags && shop.tags.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-neutral-800/70 flex flex-wrap gap-1">
-                    {shop.tags.slice(0, 5).map((t, idx) => {
+                  <div className="mt-3 pt-2.5 border-t border-neutral-800/70 flex flex-wrap gap-1.5">
+                    {shop.tags.slice(0, 6).map((t, idx) => {
                       const isHighlighted = (searchQuery && t.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
                         (selectedProductFilter && t.toLowerCase().includes(selectedProductFilter.toLowerCase().trim()));
                       return (
@@ -295,37 +305,38 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                             e.stopPropagation();
                             setSelectedProductFilter((prev) => (prev?.toLowerCase() === t.toLowerCase() ? null : t));
                           }}
-                          className={`text-[10px] px-2 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                          className={`text-[11px] px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer touch-manipulation flex items-center gap-1 ${
                             isHighlighted
-                              ? 'bg-emerald-500 text-neutral-950 font-bold'
-                              : 'bg-neutral-800/80 text-emerald-300 border border-emerald-500/20 hover:bg-neutral-700'
+                              ? 'bg-emerald-500 text-neutral-950 font-bold shadow-xs'
+                              : 'bg-neutral-800/90 text-emerald-300 border border-emerald-500/20 hover:bg-neutral-700 active:bg-neutral-600'
                           }`}
                           title={`Filter by product "${t}"`}
                         >
-                          {t}
+                          <Tag className="w-2.5 h-2.5 opacity-70" />
+                          <span>{t}</span>
                         </button>
                       );
                     })}
-                    {shop.tags.length > 5 && (
-                      <span className="text-[10px] px-1 text-neutral-500 self-center">
-                        +{shop.tags.length - 5}
+                    {shop.tags.length > 6 && (
+                      <span className="text-[11px] px-1 text-neutral-400 self-center">
+                        +{shop.tags.length - 6} more
                       </span>
                     )}
                   </div>
                 )}
 
                 {shop.notes && (
-                  <p className="text-xs text-neutral-400 mt-2.5 line-clamp-2 bg-neutral-950/40 p-2 rounded border border-neutral-800/50">
+                  <p className="text-xs text-neutral-400 mt-2.5 line-clamp-2 bg-neutral-950/50 p-2.5 rounded-lg border border-neutral-800/60 leading-relaxed">
                     {shop.notes}
                   </p>
                 )}
               </div>
 
               <div className="mt-4 pt-3 border-t border-neutral-800/80 flex items-center justify-between">
-                <span className="text-xs text-neutral-500">Multiplan Center</span>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+                <span className="text-[11px] text-neutral-500 font-medium">Multiplan Center</span>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 group-hover:translate-x-0.5 transition-transform">
                   View Details & History
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </span>
               </div>
             </div>

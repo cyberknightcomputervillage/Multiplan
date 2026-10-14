@@ -13,8 +13,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   error,
 }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/90 backdrop-blur-md">
-      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-2xl text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-neutral-950/90 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-8 shadow-2xl text-center my-auto max-h-[92dvh] overflow-y-auto">
         {/* Multiplan Emblem */}
         <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto mb-5 shadow-inner">
           <Building2 className="w-8 h-8" />
@@ -42,7 +42,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             onClick={onSignInWithGoogle}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-neutral-100 text-neutral-900 rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+            className="w-full min-h-[48px] flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-neutral-100 active:bg-neutral-200 text-neutral-900 rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed touch-manipulation"
           >
             {/* Google G Icon */}
             <svg className="w-5 h-5" viewBox="0 0 24 24">

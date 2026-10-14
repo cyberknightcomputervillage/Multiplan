@@ -10,7 +10,8 @@ import {
   LogOut,
   User as UserIcon,
   ShieldCheck,
-  Lock
+  Lock,
+  Phone
 } from 'lucide-react';
 import { User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
@@ -289,134 +290,137 @@ export default function App() {
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       {/* Top Main Navigation Bar */}
       <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur border-b border-neutral-800">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Logo & Center Title */}
-          <div 
-            onClick={() => {
-              setSelectedShop(null);
-              setShowAdminLogin(false);
-              setActiveTab('search');
-            }}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-bold text-base sm:text-lg text-white tracking-tight flex items-center gap-2">
-                Multiplan Center
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
-                  Dhaka
-                </span>
-                {isAdmin && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    Admin Active
-                  </span>
-                )}
-                {!isAdmin && canEditShop && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
-                    Editor
-                  </span>
-                )}
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3.5">
+          <div className="flex items-center justify-between gap-2">
+            {/* Logo & Center Title */}
+            <div 
+              onClick={() => {
+                setSelectedShop(null);
+                setShowAdminLogin(false);
+                setActiveTab('search');
+              }}
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0 touch-manipulation"
+            >
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform flex-shrink-0 shadow-xs">
+                <Building2 className="w-5 h-5" />
               </div>
-              <div className="text-xs text-neutral-400 flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-emerald-400" />
-                Elephant Road · 14 Floors
+              <div className="min-w-0">
+                <div className="font-bold text-sm sm:text-lg text-white tracking-tight flex items-center gap-1.5 flex-wrap">
+                  <span className="truncate">Multiplan Center</span>
+                  <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
+                    Dhaka
+                  </span>
+                  {isAdmin && (
+                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                      Admin
+                    </span>
+                  )}
+                  {!isAdmin && canEditShop && (
+                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                      Editor
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] sm:text-xs text-neutral-400 flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                  <span className="truncate">Elephant Road · 14 Floors</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Clean Main Nav */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            <nav className="flex items-center p-1 bg-neutral-950/80 rounded-lg border border-neutral-800">
-              <button
-                onClick={() => {
-                  setSelectedShop(null);
-                  setShowAdminLogin(false);
-                  setActiveTab('search');
-                }}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
-                  activeTab === 'search' && !selectedShop && !showAdminLogin
-                    ? 'bg-neutral-800 text-white shadow-sm font-semibold'
-                    : 'text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                <Search className="w-4 h-4" />
-                <span>Search Shops</span>
-              </button>
-
-              {/* Store Information tab appears if authorized as admin OR user has canEditShop permission */}
-              {(isAdmin || canEditShop) && (
+            {/* Clean Main Nav (Desktop) & Top Controls */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              <nav className="hidden sm:flex items-center p-1 bg-neutral-950/80 rounded-lg border border-neutral-800">
                 <button
                   onClick={() => {
                     setSelectedShop(null);
                     setShowAdminLogin(false);
-                    setActiveTab('store_info');
+                    setActiveTab('search');
                   }}
                   className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
-                    activeTab === 'store_info' && !selectedShop
+                    activeTab === 'search' && !selectedShop && !showAdminLogin
                       ? 'bg-neutral-800 text-white shadow-sm font-semibold'
                       : 'text-neutral-400 hover:text-neutral-200'
                   }`}
                 >
-                  <Store className={`w-4 h-4 ${isAdmin ? 'text-amber-400' : 'text-blue-400'}`} />
-                  <span>Store Information</span>
+                  <Search className="w-4 h-4" />
+                  <span>Search Shops</span>
+                </button>
+
+                {/* Store Information tab appears if authorized as admin OR user has canEditShop permission */}
+                {(isAdmin || canEditShop) && (
+                  <button
+                    onClick={() => {
+                      setSelectedShop(null);
+                      setShowAdminLogin(false);
+                      setActiveTab('store_info');
+                    }}
+                    className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
+                      activeTab === 'store_info' && !selectedShop
+                        ? 'bg-neutral-800 text-white shadow-sm font-semibold'
+                        : 'text-neutral-400 hover:text-neutral-200'
+                    }`}
+                  >
+                    <Store className={`w-4 h-4 ${isAdmin ? 'text-amber-400' : 'text-blue-400'}`} />
+                    <span>Store Information</span>
+                  </button>
+                )}
+              </nav>
+
+              {/* Subtle About / info toggle */}
+              <button
+                onClick={() => setShowAboutModal(true)}
+                className="p-2 min-h-[38px] min-w-[38px] flex items-center justify-center text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer touch-manipulation"
+                title="About this directory"
+              >
+                <Info className="w-4 h-4" />
+              </button>
+
+              {/* Admin Exit Button if logged in as admin */}
+              {isAdmin && (
+                <button
+                  onClick={handleExitAdmin}
+                  className="px-2.5 py-1.5 min-h-[38px] text-[11px] font-bold rounded-lg bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-700/50 transition-colors cursor-pointer touch-manipulation flex items-center gap-1"
+                  title="Lock admin session"
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>Exit</span>
                 </button>
               )}
-            </nav>
 
-            {/* Subtle About / info toggle */}
-            <button
-              onClick={() => setShowAboutModal(true)}
-              className="p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
-              title="About this directory"
-            >
-              <Info className="w-4 h-4" />
-            </button>
+              {/* User Profile & Sign Out */}
+              <div className="flex items-center pl-1.5 sm:pl-2 ml-0.5 sm:ml-1 border-l border-neutral-800 gap-1.5 sm:gap-2">
+                {currentUser.photoURL ? (
+                  <img
+                    src={currentUser.photoURL}
+                    alt={currentUser.displayName || 'User'}
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-neutral-700 object-cover flex-shrink-0"
+                    title={currentUser.displayName || currentUser.email || 'Logged in'}
+                  />
+                ) : (
+                  <div 
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-neutral-300 text-xs font-semibold flex-shrink-0"
+                    title={currentUser.email || 'Logged in'}
+                  >
+                    <UserIcon className="w-3.5 h-3.5" />
+                  </div>
+                )}
 
-            {/* Admin Exit Button if logged in as admin */}
-            {isAdmin && (
-              <button
-                onClick={handleExitAdmin}
-                className="px-2.5 py-1 text-xs font-semibold rounded bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-700/50 transition-colors cursor-pointer"
-                title="Lock admin session"
-              >
-                Exit Admin
-              </button>
-            )}
-
-            {/* User Profile & Sign Out */}
-            <div className="flex items-center pl-2 ml-1 border-l border-neutral-800 gap-2">
-              {currentUser.photoURL ? (
-                <img
-                  src={currentUser.photoURL}
-                  alt={currentUser.displayName || 'User'}
-                  className="w-7 h-7 rounded-full border border-neutral-700 object-cover"
-                  title={currentUser.displayName || currentUser.email || 'Logged in'}
-                />
-              ) : (
-                <div 
-                  className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-neutral-300 text-xs font-semibold"
-                  title={currentUser.email || 'Logged in'}
+                <button
+                  onClick={handleSignOut}
+                  className="p-2 min-h-[38px] min-w-[38px] flex items-center justify-center text-neutral-400 hover:text-red-400 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer touch-manipulation"
+                  title="Sign out"
                 >
-                  <UserIcon className="w-3.5 h-3.5" />
-                </div>
-              )}
-
-              <button
-                onClick={handleSignOut}
-                className="p-1.5 text-neutral-400 hover:text-red-400 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
-                title="Sign out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Body */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-8 pb-28 sm:pb-8">
         {error && (
           <div className="mb-6 p-4 bg-red-950/50 border border-red-800/80 rounded-xl text-red-300 text-sm flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -509,7 +513,7 @@ export default function App() {
       </main>
 
       {/* Minimal Footer */}
-      <footer className="border-t border-neutral-800/80 bg-neutral-950 py-4 text-xs text-neutral-500 text-center">
+      <footer className="border-t border-neutral-800/80 bg-neutral-950 py-4 text-xs text-neutral-500 text-center pb-24 sm:pb-4">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>Multiplan Center (ECS Computer City), New Elephant Road, Dhaka-1205 · 14 Floors Total</span>
           <div className="flex items-center gap-3">
@@ -535,6 +539,90 @@ export default function App() {
         </div>
       </footer>
 
+      {/* Mobile Ergonomic Fixed Bottom Action & Navigation Bar */}
+      <nav 
+        aria-label="Mobile Navigation"
+        className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-neutral-900/95 backdrop-blur-md border-t border-neutral-800 shadow-2xl px-3 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))]"
+      >
+        {selectedShop ? (
+          /* When inspecting a single store, bottom bar offers instant thumb navigation & actions */
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBackToSearch}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-neutral-800 active:bg-neutral-700 text-white text-xs font-bold transition-all shadow-xs touch-manipulation"
+            >
+              <Search className="w-4 h-4 text-emerald-400" />
+              <span>Back to Search</span>
+            </button>
+
+            {selectedShop.phone && (
+              <a
+                href={`tel:${selectedShop.phone}`}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 active:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs touch-manipulation"
+              >
+                <Phone className="w-4 h-4" />
+                <span>Call Shop</span>
+              </a>
+            )}
+
+            {(isAdmin || canEditShop) && (
+              <button
+                onClick={() => handleEditShopFromDetails(selectedShop)}
+                className="flex items-center justify-center p-2.5 rounded-xl bg-neutral-800 active:bg-neutral-700 text-neutral-300 hover:text-white border border-neutral-700/60 touch-manipulation"
+                title="Edit Shop"
+              >
+                <Store className="w-4 h-4 text-amber-400" />
+              </button>
+            )}
+          </div>
+        ) : (
+          /* Standard Mobile Tab Bar: Search Directory, Store Info, About */
+          <div className="flex items-center justify-around gap-1">
+            <button
+              onClick={() => {
+                setSelectedShop(null);
+                setShowAdminLogin(false);
+                setActiveTab('search');
+              }}
+              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[11px] font-semibold transition-all touch-manipulation ${
+                activeTab === 'search' && !selectedShop && !showAdminLogin
+                  ? 'text-emerald-400 bg-emerald-950/40 shadow-xs border border-emerald-500/25'
+                  : 'text-neutral-400 hover:text-neutral-200 active:bg-neutral-800/60'
+              }`}
+            >
+              <Search className="w-4 h-4 mb-0.5" />
+              <span>Search</span>
+            </button>
+
+            {(isAdmin || canEditShop) && (
+              <button
+                onClick={() => {
+                  setSelectedShop(null);
+                  setShowAdminLogin(false);
+                  setActiveTab('store_info');
+                }}
+                className={`flex-1 flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[11px] font-semibold transition-all touch-manipulation ${
+                  activeTab === 'store_info' && !selectedShop
+                    ? 'text-amber-400 bg-amber-950/40 shadow-xs border border-amber-500/25'
+                    : 'text-neutral-400 hover:text-neutral-200 active:bg-neutral-800/60'
+                }`}
+              >
+                <Store className="w-4 h-4 mb-0.5" />
+                <span>{isAdmin ? 'Admin / Shops' : 'Edit Shops'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowAboutModal(true)}
+              className="flex-1 flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-[11px] font-medium text-neutral-400 hover:text-neutral-200 active:bg-neutral-800/60 transition-all touch-manipulation"
+            >
+              <Info className="w-4 h-4 mb-0.5" />
+              <span>About</span>
+            </button>
+          </div>
+        )}
+      </nav>
+
       {/* Admin Action Password Modal for Global Actions */}
       {pendingGlobalAction && (
         <AdminActionPasswordModal
@@ -551,15 +639,15 @@ export default function App() {
 
       {/* About Modal */}
       {showAboutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-xl w-full max-w-md p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-700/80 rounded-2xl w-full max-w-md p-5 sm:p-6 shadow-2xl relative my-auto max-h-[92dvh] overflow-y-auto">
             <div className="flex items-center gap-3 pb-3 border-b border-neutral-800">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
                 <Building2 className="w-5 h-5" />
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Multiplan Center Manager</h3>
-                <p className="text-xs text-neutral-400">Dhaka, Bangladesh · 14 Floors</p>
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-white truncate">Multiplan Center Manager</h3>
+                <p className="text-xs text-neutral-400 truncate">Dhaka, Bangladesh · 14 Floors</p>
               </div>
             </div>
 
@@ -567,7 +655,7 @@ export default function App() {
               <p>
                 A clean, dedicated personal business tool for finding shops inside Multiplan Center and tracking purchase/sales transactions.
               </p>
-              <div className="bg-neutral-950 p-3 rounded border border-neutral-800 space-y-1.5">
+              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1.5">
                 <div className="font-semibold text-white">Role Access:</div>
                 <div>• <strong>Admin Panel (/admin)</strong>: Password-protected (`cyberknight`) for managing store records across all 14 floors.</div>
                 <div>• <strong>General Users</strong>: Search directory &amp; manage their own private purchase and sale records tied directly to their Google account.</div>
@@ -577,7 +665,7 @@ export default function App() {
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setShowAboutModal(false)}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 min-h-[42px] bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer touch-manipulation transition-colors shadow-sm"
               >
                 Close
               </button>

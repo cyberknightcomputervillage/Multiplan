@@ -722,21 +722,21 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
             </div>
 
             {/* Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-800">
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-3 border-t border-neutral-800">
               <button
                 type="button"
                 onClick={resetForm}
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-sm font-medium transition-colors"
+                className="w-full sm:w-auto px-5 py-2.5 min-h-[42px] bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-300 rounded-xl text-xs sm:text-sm font-semibold transition-colors cursor-pointer touch-manipulation"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
+                className="w-full sm:w-auto px-7 py-2.5 min-h-[42px] bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold transition-colors shadow-sm cursor-pointer touch-manipulation"
               >
-                {isSubmitting ? 'Saving...' : 'Save Shop'}
+                {isSubmitting ? 'Saving Shop...' : (editingShop ? 'Update Shop Details' : 'Save New Shop')}
               </button>
             </div>
           </form>
@@ -764,7 +764,112 @@ export const StoreInfoPage: React.FC<StoreInfoPageProps> = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View for Shops (screens < 768px) */}
+        <div className="md:hidden divide-y divide-neutral-800">
+          {displayedShops.length === 0 ? (
+            <div className="py-8 text-center text-neutral-500 text-xs">
+              No shops match the filter.
+            </div>
+          ) : (
+            displayedShops.map((shop) => (
+              <div key={shop.id} className="p-3.5 space-y-2.5">
+                <div className="flex items-start gap-3">
+                  {shop.logo ? (
+                    <img
+                      src={shop.logo}
+                      alt=""
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                      className="w-10 h-10 rounded-lg object-cover border border-neutral-700 bg-neutral-800 flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0 text-neutral-400">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-white text-sm break-words">{shop.name}</div>
+                    {shop.phone && (
+                      <div className="text-xs text-neutral-400 flex items-center gap-1 mt-0.5">
+                        <Phone className="w-3 h-3 text-neutral-500" />
+                        <a href={`tel:${shop.phone}`} className="hover:text-emerald-400">
+                          {shop.phone}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Locations */}
+                <div className="flex flex-wrap gap-1.5">
+                  {shop.floor_locations && shop.floor_locations.length > 0 ? (
+                    shop.floor_locations.map((loc, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-neutral-800 text-neutral-200 border border-neutral-700/80"
+                      >
+                        <span className="font-semibold text-emerald-400">{loc.floor}:</span>
+                        <span>Shop {loc.shop_number}</span>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-neutral-800 text-neutral-300 border border-neutral-700/60">
+                      <span>Shop {shop.shop_number} · {shop.floor}</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Tags */}
+                {shop.tags && shop.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {shop.tags.map((t, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/60"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {shop.notes && (
+                  <div className="text-xs text-neutral-400 bg-neutral-950/60 p-2 rounded border border-neutral-800/60">
+                    {shop.notes}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-800/60">
+                  <button
+                    onClick={() => onViewShop(shop)}
+                    className="px-3.5 py-1.5 min-h-[36px] rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-650 text-emerald-400 text-xs font-semibold transition-colors cursor-pointer touch-manipulation border border-neutral-700/60"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleOpenEdit(shop)}
+                    className="px-3.5 py-1.5 min-h-[36px] rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-650 text-neutral-200 text-xs font-semibold transition-colors cursor-pointer touch-manipulation border border-neutral-700/60"
+                  >
+                    Edit
+                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setDeleteTargetShop(shop)}
+                      className="px-3.5 py-1.5 min-h-[36px] rounded-lg bg-neutral-800 hover:bg-red-950/60 active:bg-red-900 text-red-400 text-xs font-semibold transition-colors cursor-pointer touch-manipulation border border-neutral-700/60"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View (screens >= 768px) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-neutral-950/60 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-800">
               <tr>

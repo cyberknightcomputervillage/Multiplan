@@ -299,43 +299,162 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-neutral-950 text-neutral-400 uppercase tracking-wider border-b border-neutral-800 text-[11px]">
-                <tr>
-                  <th className="py-3 px-4 font-semibold">User / Google Email</th>
-                  <th className="py-3 px-4 font-semibold">View Access</th>
-                  <th className="py-3 px-4 font-semibold">Shop Edit Permission</th>
-                  <th className="py-3 px-4 font-semibold">Request Note</th>
-                  <th className="py-3 px-4 font-semibold">Date</th>
-                  <th className="py-3 px-4 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-800 text-neutral-300">
-                {filteredUsers.map((user) => {
-                  return (
-                    <tr key={user.id} className="hover:bg-neutral-800/40 transition-colors">
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2.5">
-                          {user.photoURL ? (
-                            <img
-                              src={user.photoURL}
-                              alt=""
-                              className="w-7 h-7 rounded-full border border-neutral-700 object-cover flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 flex-shrink-0">
-                              <Mail className="w-3.5 h-3.5" />
-                            </div>
-                          )}
-                          <div>
-                            <div className="font-semibold text-white text-xs">{user.email}</div>
-                            {user.displayName && (
-                              <div className="text-[11px] text-neutral-400">{user.displayName}</div>
-                            )}
-                          </div>
+          <div>
+            {/* Mobile Cards for User Access (screens < 768px) */}
+            <div className="md:hidden divide-y divide-neutral-800">
+              {filteredUsers.map((user) => (
+                <div key={user.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {user.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt=""
+                          className="w-8 h-8 rounded-full border border-neutral-700 object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 flex-shrink-0">
+                          <Mail className="w-4 h-4" />
                         </div>
-                      </td>
+                      )}
+                      <div className="min-w-0">
+                        <div className="font-semibold text-white text-xs truncate">{user.email}</div>
+                        {user.displayName && (
+                          <div className="text-[11px] text-neutral-400 truncate">{user.displayName}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      {user.status === 'approved' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          <CheckCircle2 className="w-2.5 h-2.5" /> Permitted
+                        </span>
+                      )}
+                      {user.status === 'pending' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <Clock className="w-2.5 h-2.5" /> Pending
+                        </span>
+                      )}
+                      {user.status === 'banned' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/15 text-red-400 border border-red-500/30">
+                          <Ban className="w-2.5 h-2.5" /> Banned
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Shop Edit Permission row */}
+                  {user.status === 'approved' && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-neutral-950/80 rounded-xl border border-neutral-800">
+                      <div className="text-xs">
+                        <span className="text-neutral-400 block text-[10px] uppercase font-semibold">Editing Rights:</span>
+                        {user.can_edit ? (
+                          <span className="text-blue-300 font-bold flex items-center gap-1 mt-0.5">
+                            <Edit className="w-3.5 h-3.5 text-blue-400" /> Can Add &amp; Edit Shops
+                          </span>
+                        ) : (
+                          <span className="text-neutral-400 mt-0.5 block">View Only (Standard)</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleToggleEditPermission(user)}
+                        className={`px-3 py-2 min-h-[38px] rounded-xl text-xs font-bold transition-colors cursor-pointer border touch-manipulation flex items-center justify-center gap-1.5 ${
+                          user.can_edit
+                            ? 'bg-neutral-800 text-amber-400 border-neutral-700 hover:bg-neutral-700 active:bg-neutral-650'
+                            : 'bg-blue-950/70 text-blue-300 border-blue-800/80 hover:bg-blue-900/80 active:bg-blue-850'
+                        }`}
+                      >
+                        {user.can_edit ? 'Revoke Edit Permission' : 'Give Edit Permission'}
+                      </button>
+                    </div>
+                  )}
+
+                  {user.request_note && (
+                    <div className="text-xs text-neutral-400 bg-neutral-950/50 p-2.5 rounded-lg border border-neutral-800/60 leading-relaxed">
+                      <span className="text-neutral-500 font-semibold">Note: </span>
+                      {user.request_note}
+                    </div>
+                  )}
+
+                  {/* Actions Bar */}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-800/60 flex-wrap">
+                    {user.status !== 'approved' && (
+                      <button
+                        onClick={() => handleUpdateStatus(user, 'approved')}
+                        className="px-3.5 py-2 min-h-[38px] bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer touch-manipulation shadow-xs"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Permit</span>
+                      </button>
+                    )}
+                    {user.status === 'approved' && (
+                      <button
+                        onClick={() => handleUpdateStatus(user, 'pending')}
+                        className="px-3 py-2 min-h-[38px] bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-650 text-neutral-300 rounded-xl text-xs font-medium cursor-pointer touch-manipulation border border-neutral-700/60"
+                      >
+                        Set to Pending
+                      </button>
+                    )}
+                    {user.status !== 'banned' && (
+                      <button
+                        onClick={() => handleUpdateStatus(user, 'banned')}
+                        className="px-3 py-2 min-h-[38px] bg-neutral-800 hover:bg-red-950/70 active:bg-red-900 text-neutral-300 hover:text-red-400 rounded-xl text-xs font-medium cursor-pointer touch-manipulation border border-neutral-700/60"
+                      >
+                        Ban
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDeleteUser(user)}
+                      className="px-3 py-2 min-h-[38px] hover:bg-red-950/70 active:bg-red-900 text-neutral-400 hover:text-red-400 rounded-xl text-xs cursor-pointer touch-manipulation border border-neutral-800 flex items-center gap-1"
+                      title="Delete Record"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="sm:hidden">Delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View (screens >= 768px) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-neutral-950 text-neutral-400 uppercase tracking-wider border-b border-neutral-800 text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4 font-semibold">User / Google Email</th>
+                    <th className="py-3 px-4 font-semibold">View Access</th>
+                    <th className="py-3 px-4 font-semibold">Shop Edit Permission</th>
+                    <th className="py-3 px-4 font-semibold">Request Note</th>
+                    <th className="py-3 px-4 font-semibold">Date</th>
+                    <th className="py-3 px-4 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800 text-neutral-300">
+                  {filteredUsers.map((user) => {
+                    return (
+                      <tr key={user.id} className="hover:bg-neutral-800/40 transition-colors">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2.5">
+                            {user.photoURL ? (
+                              <img
+                                src={user.photoURL}
+                                alt=""
+                                className="w-7 h-7 rounded-full border border-neutral-700 object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 flex-shrink-0">
+                                <Mail className="w-3.5 h-3.5" />
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-semibold text-white text-xs">{user.email}</div>
+                              {user.displayName && (
+                                <div className="text-[11px] text-neutral-400">{user.displayName}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
 
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         {user.status === 'approved' && (
@@ -442,8 +561,9 @@ export const UserAccessManagementTab: React.FC<UserAccessManagementTabProps> = (
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+    </div>
 
       {/* Direct Add User Modal */}
       {showAddModal && (

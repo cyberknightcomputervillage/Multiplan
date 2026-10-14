@@ -269,88 +269,101 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
   const numTransactions = transactions.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top back bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 transition-colors text-sm font-medium cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 min-h-[42px] rounded-xl bg-neutral-900 hover:bg-neutral-800 active:bg-neutral-850 text-neutral-200 hover:text-white border border-neutral-800 transition-colors text-xs sm:text-sm font-semibold cursor-pointer touch-manipulation shadow-xs"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Search
+          <ArrowLeft className="w-4 h-4 text-emerald-400" />
+          <span>Back to Search</span>
         </button>
 
-        {(isAdmin || canEditShop) && (
-          <button
-            onClick={() => onEditShop(shop)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 transition-colors text-sm cursor-pointer"
-          >
-            <Edit3 className="w-4 h-4 text-emerald-400" />
-            {isAdmin ? 'Edit Shop Info (Admin)' : 'Edit Shop Info'}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {shop.phone && (
+            <a
+              href={`tel:${shop.phone}`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[42px] rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer touch-manipulation sm:hidden"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span>Call</span>
+            </a>
+          )}
+          {(isAdmin || canEditShop) && (
+            <button
+              onClick={() => onEditShop(shop)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[42px] rounded-xl bg-neutral-900 hover:bg-neutral-800 active:bg-neutral-850 text-neutral-300 hover:text-white border border-neutral-800 transition-colors text-xs sm:text-sm font-medium cursor-pointer touch-manipulation shadow-xs"
+            >
+              <Edit3 className="w-4 h-4 text-emerald-400" />
+              <span>{isAdmin ? 'Edit (Admin)' : 'Edit Shop'}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Shop Profile Header */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 sm:p-7 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start gap-5">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 sm:p-7 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
           {shop.logo ? (
             <img
               src={shop.logo}
               alt={shop.name}
               onError={(e) => {
-                // If link fails or is invalid, fallback cleanly
                 (e.target as HTMLElement).style.display = 'none';
               }}
-              className="w-20 h-20 rounded-xl object-cover border border-neutral-700 bg-neutral-800 flex-shrink-0"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-neutral-700 bg-neutral-800 flex-shrink-0 shadow-sm"
             />
           ) : (
-            <div className="w-20 h-20 rounded-xl bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0 text-neutral-400">
-              <Building2 className="w-10 h-10" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0 text-neutral-400 shadow-sm">
+              <Building2 className="w-8 h-8 sm:w-10 sm:h-10" />
             </div>
           )}
 
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <div className="flex-1 min-w-0 w-full">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="text-[11px] sm:text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 Multiplan Center
               </span>
               {shop.floor_locations && shop.floor_locations.length > 0 ? (
                 shop.floor_locations.map((loc, i) => (
-                  <span key={i} className="text-xs text-neutral-200 bg-neutral-800 border border-neutral-700/80 px-2.5 py-0.5 rounded flex items-center gap-1">
+                  <span key={i} className="text-[11px] sm:text-xs text-neutral-200 bg-neutral-800 border border-neutral-700/80 px-2 sm:px-2.5 py-0.5 rounded flex items-center gap-1">
                     <span className="font-semibold text-emerald-400">{loc.floor}:</span>
                     <span>Shop {loc.shop_number}</span>
                   </span>
                 ))
               ) : (
                 shop.floor.split(/[,&/]+/).map((f) => f.trim()).filter(Boolean).map((f) => (
-                  <span key={f} className="text-xs text-neutral-300 bg-neutral-800 border border-neutral-700/80 px-2 py-0.5 rounded">
+                  <span key={f} className="text-[11px] sm:text-xs text-neutral-300 bg-neutral-800 border border-neutral-700/80 px-2 py-0.5 rounded">
                     {f}
                   </span>
                 ))
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1.5">
+            <h1 className="text-xl sm:text-3xl font-bold text-white mt-1.5 break-words">
               {shop.name}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-300 mt-2">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-neutral-300 mt-2">
               <div className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-emerald-400" />
-                {shop.floor_locations && shop.floor_locations.length > 0 ? (
-                  <span>
-                    {shop.floor_locations.map((loc) => `${loc.floor} (Shop ${loc.shop_number})`).join(' · ')}
-                  </span>
-                ) : (
-                  <span>Shop {shop.shop_number} · {shop.floor}</span>
-                )}
+                <MapPin className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span className="break-words">
+                  {shop.floor_locations && shop.floor_locations.length > 0 ? (
+                    shop.floor_locations.map((loc) => `${loc.floor} (${loc.shop_number})`).join(' · ')
+                  ) : (
+                    `Shop ${shop.shop_number} · ${shop.floor}`
+                  )}
+                </span>
               </div>
 
               {shop.phone && (
                 <div className="flex items-center gap-1.5">
-                  <Phone className="w-4 h-4 text-neutral-400" />
-                  <a href={`tel:${shop.phone}`} className="hover:text-emerald-400 transition-colors">
+                  <Phone className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <a
+                    href={`tel:${shop.phone}`}
+                    className="hover:text-emerald-400 active:text-emerald-300 transition-colors font-medium text-emerald-300 underline underline-offset-2 sm:no-underline"
+                  >
                     {shop.phone}
                   </a>
                 </div>
@@ -388,38 +401,38 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
       </div>
 
       {/* Shop Summary Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-            <ShoppingBag className="w-6 h-6" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 sm:p-5 flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">
+            <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <div className="text-xs text-neutral-400 font-medium">Total Purchases</div>
-            <div className="text-xl font-bold text-white mt-0.5">
+            <div className="text-[11px] sm:text-xs text-neutral-400 font-medium">Total Purchases</div>
+            <div className="text-base sm:text-xl font-bold text-white mt-0.5">
               ৳{totalPurchases.toLocaleString('en-US')}
             </div>
           </div>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <TrendingUp className="w-6 h-6" />
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 sm:p-5 flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <div className="text-xs text-neutral-400 font-medium">Total Sales</div>
-            <div className="text-xl font-bold text-white mt-0.5">
+            <div className="text-[11px] sm:text-xs text-neutral-400 font-medium">Total Sales</div>
+            <div className="text-base sm:text-xl font-bold text-white mt-0.5">
               ৳{totalSales.toLocaleString('en-US')}
             </div>
           </div>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-            <DollarSign className="w-6 h-6" />
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 sm:p-5 flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 flex-shrink-0">
+            <DollarSign className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <div className="text-xs text-neutral-400 font-medium">Number of Transactions</div>
-            <div className="text-xl font-bold text-white mt-0.5">
+            <div className="text-[11px] sm:text-xs text-neutral-400 font-medium">Number of Transactions</div>
+            <div className="text-base sm:text-xl font-bold text-white mt-0.5">
               {numTransactions}
             </div>
           </div>
@@ -428,25 +441,25 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
 
       {/* Transaction History Section */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden shadow-sm">
-        <div className="p-5 sm:p-6 border-b border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 sm:p-6 border-b border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-white">Transaction History</h2>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg sm:text-xl font-bold text-white">Transaction History</h2>
+              <span className="text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 truncate max-w-[200px]">
                 {currentUser.email}
               </span>
             </div>
-            <p className="text-xs text-neutral-400 mt-0.5">
-              Purchases and sales you recorded with {shop.name} (supports multiple product items per record)
+            <p className="text-xs text-neutral-400 mt-1">
+              Purchases and sales you recorded with {shop.name}
             </p>
           </div>
 
           <button
             onClick={handleOpenAdd}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors shadow-sm cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm cursor-pointer w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
-            Add Transaction (Multi-Product)
+            <span>Add Transaction</span>
           </button>
         </div>
 
@@ -476,206 +489,337 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-neutral-950 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-800">
-                <tr>
-                  <th className="py-3.5 px-4 font-semibold">Date</th>
-                  <th className="py-3.5 px-4 font-semibold">Type</th>
-                  <th className="py-3.5 px-4 font-semibold">Products / Item List</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Items / Qty</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Total Amount</th>
-                  <th className="py-3.5 px-4 font-semibold">Notes</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-800 text-neutral-300">
-                {transactions.map((tx) => {
-                  const hasMultipleItems = tx.items && tx.items.length > 0;
-                  const isExpanded = expandedTxId === tx.id;
+          <div>
+            {/* Mobile Card View (screens < 768px) */}
+            <div className="md:hidden divide-y divide-neutral-800">
+              {transactions.map((tx) => {
+                const hasMultipleItems = tx.items && tx.items.length > 0;
+                const isExpanded = expandedTxId === tx.id;
 
-                  return (
-                    <React.Fragment key={tx.id}>
-                      <tr className="hover:bg-neutral-800/40 transition-colors">
-                        <td className="py-3.5 px-4 whitespace-nowrap text-neutral-400 text-xs">
-                          {tx.date}
-                        </td>
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
-                              tx.type === 'Purchase'
-                                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                                : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                            }`}
-                          >
-                            {tx.type}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div className="space-y-1">
-                            {hasMultipleItems ? (
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-white text-sm">
-                                    {tx.items!.length} {tx.items!.length === 1 ? 'product' : 'products'}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setExpandedTxId(isExpanded ? null : tx.id)}
-                                    className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-emerald-400 border border-neutral-700 transition-colors cursor-pointer"
-                                  >
-                                    {isExpanded ? (
-                                      <>
-                                        <ChevronUp className="w-3 h-3" /> Hide List
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ChevronDown className="w-3 h-3" /> View List ({tx.items!.length})
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-                                <div className="text-xs text-neutral-400 line-clamp-1">
-                                  {tx.items!.map((it) => it.product_name).join(', ')}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="font-medium text-white">
-                                {tx.product_name}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 text-right tabular-nums">
-                          <span className="font-medium text-neutral-200">
-                            {tx.quantity} pcs
-                          </span>
-                          {hasMultipleItems && (
-                            <div className="text-[11px] text-neutral-500">
-                              ({tx.items!.length} line items)
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 text-right tabular-nums font-semibold text-emerald-400 whitespace-nowrap">
+                return (
+                  <div key={tx.id} className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
+                            tx.type === 'Purchase'
+                              ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                              : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          }`}
+                        >
+                          {tx.type}
+                        </span>
+                        <span className="text-xs text-neutral-400">{tx.date}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base font-bold text-emerald-400">
                           ৳{tx.total_amount.toLocaleString('en-US')}
-                        </td>
-                        <td className="py-3.5 px-4 text-xs text-neutral-400 max-w-xs truncate">
-                          {tx.notes || '—'}
-                        </td>
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          {deleteConfirmId === tx.id ? (
-                            <div className="inline-flex items-center gap-1.5">
-                              <button
-                                onClick={() => handleDelete(tx.id)}
-                                className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs cursor-pointer"
-                              >
-                                Confirm
-                              </button>
-                              <button
-                                onClick={() => setDeleteConfirmId(null)}
-                                className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-xs cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="inline-flex items-center gap-1">
-                              <button
-                                onClick={() => handleOpenEdit(tx)}
-                                className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded transition-colors cursor-pointer"
-                                title="Edit"
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => setDeleteConfirmId(tx.id)}
-                                className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-red-400 rounded transition-colors cursor-pointer"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                        </div>
+                        <div className="text-[11px] text-neutral-400">
+                          {tx.quantity} pcs {hasMultipleItems && `(${tx.items!.length} items)`}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-neutral-950/70 p-2.5 rounded-lg border border-neutral-800/80">
+                      {hasMultipleItems ? (
+                        <div>
+                          <div className="flex items-center justify-between text-xs font-medium text-white mb-1">
+                            <span>{tx.items!.length} Products</span>
+                            <button
+                              type="button"
+                              onClick={() => setExpandedTxId(isExpanded ? null : tx.id)}
+                              className="text-emerald-400 flex items-center gap-1 text-[11px] font-semibold"
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp className="w-3.5 h-3.5" /> Hide Breakdown
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="w-3.5 h-3.5" /> View Breakdown
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          {!isExpanded && (
+                            <div className="text-xs text-neutral-400 line-clamp-1">
+                              {tx.items!.map((it) => it.product_name).join(', ')}
                             </div>
                           )}
-                        </td>
-                      </tr>
 
-                      {/* Expandable itemized sub-table */}
-                      {hasMultipleItems && isExpanded && (
-                        <tr className="bg-neutral-950/60 border-t border-b border-neutral-800">
-                          <td colSpan={7} className="px-6 py-4">
-                            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 max-w-4xl">
-                              <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                                <span className="flex items-center gap-1.5">
-                                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
-                                  Itemized Products Breakdown
-                                </span>
-                                <span>{tx.items!.length} Products</span>
-                              </div>
-                              <div className="divide-y divide-neutral-800/80 text-xs">
-                                {tx.items!.map((it, idx) => (
-                                  <div key={idx} className="py-2 flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <span className="w-5 h-5 rounded-full bg-neutral-800 text-neutral-400 flex items-center justify-center text-[10px] font-bold">
-                                        {idx + 1}
-                                      </span>
-                                      <span className="text-white font-medium truncate">
-                                        {it.product_name}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-5 whitespace-nowrap text-neutral-300">
-                                      <span>
-                                        Qty: <strong className="text-white">{it.quantity}</strong>
-                                      </span>
-                                      <span>
-                                        Rate: <strong className="text-neutral-200">৳{it.unit_price.toLocaleString('en-US')}</strong>
-                                      </span>
-                                      <span className="text-emerald-400 font-bold min-w-[70px] text-right">
-                                        ৳{it.total_price.toLocaleString('en-US')}
-                                      </span>
-                                    </div>
+                          {isExpanded && (
+                            <div className="mt-2 pt-2 border-t border-neutral-800/80 space-y-1.5 text-xs">
+                              {tx.items!.map((it, idx) => (
+                                <div key={idx} className="flex items-center justify-between py-1 border-b border-neutral-800/40 last:border-0">
+                                  <span className="text-neutral-300 font-medium truncate pr-2">
+                                    {it.product_name}
+                                  </span>
+                                  <span className="text-neutral-400 whitespace-nowrap text-right text-[11px]">
+                                    {it.quantity} × ৳{it.unit_price.toLocaleString('en-US')} = <strong className="text-white">৳{it.total_price.toLocaleString('en-US')}</strong>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-xs font-medium text-white break-words">
+                          {tx.product_name}
+                        </div>
+                      )}
+
+                      {tx.notes && (
+                        <div className="text-[11px] text-neutral-400 mt-1.5 pt-1.5 border-t border-neutral-800/60">
+                          <span className="text-neutral-500">Note: </span>
+                          {tx.notes}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2.5 pt-1.5 border-t border-neutral-800/60">
+                      {deleteConfirmId === tx.id ? (
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                          <button
+                            onClick={() => handleDelete(tx.id)}
+                            className="flex-1 sm:flex-none px-4 py-2 min-h-[38px] bg-red-600 hover:bg-red-500 active:bg-red-700 text-white rounded-xl text-xs font-bold cursor-pointer touch-manipulation shadow-xs"
+                          >
+                            Confirm Delete
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(null)}
+                            className="px-4 py-2 min-h-[38px] bg-neutral-800 active:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold cursor-pointer touch-manipulation"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleOpenEdit(tx)}
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[38px] bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-200 rounded-xl text-xs font-semibold cursor-pointer touch-manipulation transition-colors border border-neutral-700/60"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(tx.id)}
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[38px] bg-neutral-800 hover:bg-red-950/60 active:bg-red-900/60 text-red-400 rounded-xl text-xs font-semibold cursor-pointer touch-manipulation transition-colors border border-neutral-700/60"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View (screens >= 768px) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-neutral-950 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-800">
+                  <tr>
+                    <th className="py-3.5 px-4 font-semibold">Date</th>
+                    <th className="py-3.5 px-4 font-semibold">Type</th>
+                    <th className="py-3.5 px-4 font-semibold">Products / Item List</th>
+                    <th className="py-3.5 px-4 font-semibold text-right">Items / Qty</th>
+                    <th className="py-3.5 px-4 font-semibold text-right">Total Amount</th>
+                    <th className="py-3.5 px-4 font-semibold">Notes</th>
+                    <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800 text-neutral-300">
+                  {transactions.map((tx) => {
+                    const hasMultipleItems = tx.items && tx.items.length > 0;
+                    const isExpanded = expandedTxId === tx.id;
+
+                    return (
+                      <React.Fragment key={tx.id}>
+                        <tr className="hover:bg-neutral-800/40 transition-colors">
+                          <td className="py-3.5 px-4 whitespace-nowrap text-neutral-400 text-xs">
+                            {tx.date}
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                                tx.type === 'Purchase'
+                                  ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              }`}
+                            >
+                              {tx.type}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="space-y-1">
+                              {hasMultipleItems ? (
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-white text-sm">
+                                      {tx.items!.length} {tx.items!.length === 1 ? 'product' : 'products'}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedTxId(isExpanded ? null : tx.id)}
+                                      className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-emerald-400 border border-neutral-700 transition-colors cursor-pointer"
+                                    >
+                                      {isExpanded ? (
+                                        <>
+                                          <ChevronUp className="w-3 h-3" /> Hide List
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ChevronDown className="w-3 h-3" /> View List ({tx.items!.length})
+                                        </>
+                                      )}
+                                    </button>
                                   </div>
-                                ))}
-                              </div>
-                              <div className="pt-2 mt-2 border-t border-neutral-800 flex justify-between items-center text-xs font-semibold">
-                                <span className="text-neutral-400">Total Calculation:</span>
-                                <span className="text-sm font-bold text-white">
-                                  ৳{tx.total_amount.toLocaleString('en-US')}
+                                  <div className="text-xs text-neutral-400 line-clamp-1">
+                                    {tx.items!.map((it) => it.product_name).join(', ')}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="font-medium text-white">
+                                  {tx.product_name}
                                 </span>
-                              </div>
+                              )}
                             </div>
                           </td>
+                          <td className="py-3.5 px-4 text-right tabular-nums">
+                            <span className="font-medium text-neutral-200">
+                              {tx.quantity} pcs
+                            </span>
+                            {hasMultipleItems && (
+                              <div className="text-[11px] text-neutral-500">
+                                ({tx.items!.length} line items)
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-right tabular-nums font-semibold text-emerald-400 whitespace-nowrap">
+                            ৳{tx.total_amount.toLocaleString('en-US')}
+                          </td>
+                          <td className="py-3.5 px-4 text-xs text-neutral-400 max-w-xs truncate">
+                            {tx.notes || '—'}
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            {deleteConfirmId === tx.id ? (
+                              <div className="inline-flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleDelete(tx.id)}
+                                  className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs cursor-pointer"
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmId(null)}
+                                  className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-xs cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1">
+                                <button
+                                  onClick={() => handleOpenEdit(tx)}
+                                  className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded transition-colors cursor-pointer"
+                                  title="Edit"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmId(tx.id)}
+                                  className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-red-400 rounded transition-colors cursor-pointer"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
                         </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+
+                        {/* Expandable itemized sub-table */}
+                        {hasMultipleItems && isExpanded && (
+                          <tr className="bg-neutral-950/60 border-t border-b border-neutral-800">
+                            <td colSpan={7} className="px-6 py-4">
+                              <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 max-w-4xl">
+                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                                  <span className="flex items-center gap-1.5">
+                                    <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                                    Itemized Products Breakdown
+                                  </span>
+                                  <span>{tx.items!.length} Products</span>
+                                </div>
+                                <div className="divide-y divide-neutral-800/80 text-xs">
+                                  {tx.items!.map((it, idx) => (
+                                    <div key={idx} className="py-2 flex items-center justify-between gap-4">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="w-5 h-5 rounded-full bg-neutral-800 text-neutral-400 flex items-center justify-center text-[10px] font-bold">
+                                          {idx + 1}
+                                        </span>
+                                        <span className="text-white font-medium truncate">
+                                          {it.product_name}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-5 whitespace-nowrap text-neutral-300">
+                                        <span>
+                                          Qty: <strong className="text-white">{it.quantity}</strong>
+                                        </span>
+                                        <span>
+                                          Rate: <strong className="text-neutral-200">৳{it.unit_price.toLocaleString('en-US')}</strong>
+                                        </span>
+                                        <span className="text-emerald-400 font-bold min-w-[70px] text-right">
+                                          ৳{it.total_price.toLocaleString('en-US')}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="pt-2 mt-2 border-t border-neutral-800 flex justify-between items-center text-xs font-semibold">
+                                  <span className="text-neutral-400">Total Calculation:</span>
+                                  <span className="text-sm font-bold text-white">
+                                    ৳{tx.total_amount.toLocaleString('en-US')}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
 
       {/* Add / Edit Transaction Modal with Multiple Products Support */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto animate-fade-in">
-          <div className="bg-neutral-900 border border-neutral-700/80 rounded-2xl w-full max-w-2xl p-5 sm:p-6 shadow-2xl relative my-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto animate-fade-in">
+          <div className="bg-neutral-900 border border-neutral-700/80 rounded-2xl w-full max-w-2xl p-4 sm:p-6 shadow-2xl relative my-auto max-h-[92dvh] overflow-y-auto">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-5 right-5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-3.5 right-3.5 sm:top-5 sm:right-5 text-neutral-400 hover:text-white transition-colors cursor-pointer w-10 h-10 flex items-center justify-center rounded-lg hover:bg-neutral-800 touch-manipulation"
+              title="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 mb-5 pb-3 border-b border-neutral-800">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="flex items-center gap-3 mb-4 sm:mb-5 pb-3 border-b border-neutral-800 pr-10">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
                 <Package className="w-5 h-5" />
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-bold text-white truncate">
                   {editingTransaction ? 'Edit Transaction' : 'Record New Transaction'}
                 </h3>
-                <p className="text-xs text-neutral-400">
-                  {shop.name} · Multi-product purchase or sale list
+                <p className="text-xs text-neutral-400 truncate">
+                  {shop.name} · Itemized purchase/sale
                 </p>
               </div>
             </div>
@@ -691,26 +835,26 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setTxType('Purchase')}
-                      className={`py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                      className={`py-2.5 px-3 min-h-[42px] rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer touch-manipulation ${
                         txType === 'Purchase'
                           ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
-                          : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                          : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-700 active:bg-neutral-900'
                       }`}
                     >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      Purchase (Buy)
+                      <ShoppingBag className="w-4 h-4" />
+                      <span>Purchase (Buy)</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setTxType('Sale')}
-                      className={`py-2 px-3 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                      className={`py-2.5 px-3 min-h-[42px] rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors cursor-pointer touch-manipulation ${
                         txType === 'Sale'
                           ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
-                          : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                          : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-700 active:bg-neutral-900'
                       }`}
                     >
-                      <TrendingUp className="w-3.5 h-3.5" />
-                      Sale (Sell)
+                      <TrendingUp className="w-4 h-4" />
+                      <span>Sale (Sell)</span>
                     </button>
                   </div>
                 </div>
@@ -724,29 +868,29 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
                     value={txDate}
                     onChange={(e) => setTxDate(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 min-h-[42px] bg-neutral-950 border border-neutral-800 rounded-xl text-white text-base sm:text-sm focus:outline-none focus:border-emerald-500 touch-manipulation"
                   />
                 </div>
               </div>
 
               {/* Products List Section */}
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center justify-between">
+              <div className="space-y-2.5 pt-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <label className="text-xs font-semibold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5 text-emerald-400" />
-                    Products / Items in this transaction *
+                    Products / Items ({txItems.length}) *
                   </label>
                   <button
                     type="button"
                     onClick={handleAddItemRow}
-                    className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 font-medium px-2 py-1 rounded bg-emerald-950/40 border border-emerald-800/60 hover:bg-emerald-900/50 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-950/50 border border-emerald-800/60 hover:bg-emerald-900/50 transition-colors cursor-pointer touch-manipulation"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Add Another Product
+                    <span>Add Item</span>
                   </button>
                 </div>
 
-                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                <div className="space-y-2.5 max-h-[280px] sm:max-h-[320px] overflow-y-auto pr-1">
                   {txItems.map((item, index) => {
                     const rowQty = Number(item.quantity) || 0;
                     const rowPrice = Number(item.unit_price) || 0;
@@ -758,21 +902,24 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
                         className="p-3 bg-neutral-950 border border-neutral-800 rounded-xl relative group"
                       >
                         <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800/80 text-xs">
-                          <span className="font-semibold text-neutral-400">
-                            Product #{index + 1}
+                          <span className="font-semibold text-neutral-300 flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-md bg-neutral-800 text-emerald-400 flex items-center justify-center text-[10px] font-bold">
+                              {index + 1}
+                            </span>
+                            <span>Item #{index + 1}</span>
                           </span>
                           <div className="flex items-center gap-2">
-                            <span className="text-emerald-400 font-medium">
-                              Subtotal: ৳{rowTotal.toLocaleString('en-US')}
+                            <span className="text-emerald-400 font-bold">
+                              ৳{rowTotal.toLocaleString('en-US')}
                             </span>
                             {txItems.length > 1 && (
                               <button
                                 type="button"
                                 onClick={() => handleRemoveItemRow(item.id)}
-                                className="text-neutral-500 hover:text-red-400 p-1 rounded transition-colors cursor-pointer"
+                                className="text-neutral-500 hover:text-red-400 p-1.5 rounded-md transition-colors cursor-pointer touch-manipulation"
                                 title="Remove item"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             )}
                           </div>
@@ -781,22 +928,22 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                           {/* Product Name */}
                           <div className="sm:col-span-6">
-                            <label className="block text-[11px] text-neutral-400 mb-1">
+                            <label className="block text-[11px] text-neutral-400 mb-1 font-medium">
                               Item Description / Name *
                             </label>
                             <input
                               type="text"
                               value={item.product_name}
                               onChange={(e) => handleItemChange(item.id, 'product_name', e.target.value)}
-                              placeholder="e.g. Logitech Mouse, RTX 4060 GPU..."
+                              placeholder="e.g. Core i5 13400 CPU, RTX 4060 GPU..."
                               required
-                              className="w-full px-3 py-1.5 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-xs placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-base sm:text-xs placeholder-neutral-500 focus:outline-none focus:border-emerald-500 touch-manipulation"
                             />
                           </div>
 
                           {/* Quantity */}
                           <div className="sm:col-span-3">
-                            <label className="block text-[11px] text-neutral-400 mb-1">
+                            <label className="block text-[11px] text-neutral-400 mb-1 font-medium">
                               Qty *
                             </label>
                             <input
@@ -806,13 +953,13 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
                               value={item.quantity}
                               onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
                               required
-                              className="w-full px-3 py-1.5 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-xs focus:outline-none focus:border-emerald-500"
+                              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-base sm:text-xs focus:outline-none focus:border-emerald-500 touch-manipulation"
                             />
                           </div>
 
                           {/* Unit Price */}
                           <div className="sm:col-span-3">
-                            <label className="block text-[11px] text-neutral-400 mb-1">
+                            <label className="block text-[11px] text-neutral-400 mb-1 font-medium">
                               Unit Price (৳) *
                             </label>
                             <input
@@ -823,7 +970,7 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
                               onChange={(e) => handleItemChange(item.id, 'unit_price', e.target.value)}
                               placeholder="850"
                               required
-                              className="w-full px-3 py-1.5 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-xs focus:outline-none focus:border-emerald-500"
+                              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700/80 rounded-lg text-white text-base sm:text-xs focus:outline-none focus:border-emerald-500 touch-manipulation"
                             />
                           </div>
                         </div>
@@ -836,10 +983,10 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
                   <button
                     type="button"
                     onClick={handleAddItemRow}
-                    className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-medium py-1.5 px-3 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold py-2 px-3 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 transition-colors cursor-pointer touch-manipulation"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    + Add Product to this List
+                    <span>+ Add Another Product</span>
                   </button>
                 </div>
               </div>
@@ -847,12 +994,12 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
               {/* Calculated Grand Total Box */}
               <div className="p-3.5 bg-emerald-950/30 border border-emerald-800/50 rounded-xl flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-neutral-300 font-medium block">Grand Total:</span>
+                  <span className="text-xs text-neutral-300 font-medium block">Total Payable:</span>
                   <span className="text-[11px] text-neutral-400">
-                    {txItems.length} {txItems.length === 1 ? 'item' : 'items'} in total list
+                    {txItems.length} {txItems.length === 1 ? 'item' : 'items'} in list
                   </span>
                 </div>
-                <span className="text-xl font-bold text-emerald-400">
+                <span className="text-xl sm:text-2xl font-bold text-emerald-400">
                   ৳{calculatedGrandTotal.toLocaleString('en-US')}
                 </span>
               </div>
@@ -867,26 +1014,26 @@ export const ShopDetailsPage: React.FC<ShopDetailsPageProps> = ({
                   value={txNotes}
                   onChange={(e) => setTxNotes(e.target.value)}
                   placeholder="e.g. Invoice #2039, Warranty included, Paid cash"
-                  className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-sm placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-base sm:text-sm placeholder-neutral-500 focus:outline-none focus:border-emerald-500 touch-manipulation"
                 />
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-800">
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-2.5 pt-3 border-t border-neutral-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 min-h-[42px] bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer touch-manipulation"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                  className="w-full sm:w-auto px-6 py-2.5 min-h-[42px] bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm touch-manipulation"
                 >
-                  {isSubmitting ? 'Saving Transaction...' : `Save ${txType} (${txItems.length} Products)`}
+                  {isSubmitting ? 'Saving Transaction...' : `Save ${txType} (৳${calculatedGrandTotal.toLocaleString('en-US')})`}
                 </button>
               </div>
             </form>

@@ -58,8 +58,8 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/90 backdrop-blur-md">
-      <div className="w-full max-w-lg bg-neutral-900 border border-neutral-800 rounded-2xl p-7 sm:p-8 shadow-2xl relative text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-neutral-950/90 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-lg bg-neutral-900 border border-neutral-800 rounded-2xl p-5 sm:p-8 shadow-2xl relative text-center my-auto max-h-[92dvh] overflow-y-auto">
         {/* Multiplan Emblem */}
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 mx-auto mb-4">
           {status === 'banned' ? (
@@ -142,16 +142,16 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({
                   value={requestNote}
                   onChange={(e) => setRequestNote(e.target.value)}
                   placeholder="e.g. Multiplan Shop Owner / Regular Buyer / Staff"
-                  className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white text-xs placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 min-h-[42px] bg-neutral-950 border border-neutral-800 rounded-xl text-white text-base sm:text-xs placeholder-neutral-500 focus:outline-none focus:border-emerald-500 touch-manipulation"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow cursor-pointer disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 min-h-[42px] bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer disabled:opacity-50 touch-manipulation"
               >
                 <Send className="w-3.5 h-3.5" />
-                {isSubmitting ? 'Sending Request...' : 'Send Access Request to Admin'}
+                <span>{isSubmitting ? 'Sending Request...' : 'Send Access Request to Admin'}</span>
               </button>
             </form>
           </div>
@@ -163,10 +163,10 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({
             <button
               onClick={handleRefresh}
               disabled={isChecking}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[42px] bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer touch-manipulation"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin text-emerald-400' : ''}`} />
-              Check Approval Status
+              <span>Check Approval Status</span>
             </button>
           ) : (
             <div />
@@ -175,10 +175,10 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
             <button
               onClick={onSignOut}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-red-300 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[42px] bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-300 hover:text-red-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer touch-manipulation"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Sign Out / Switch Account
+              <span>Sign Out / Switch Account</span>
             </button>
           </div>
         </div>
