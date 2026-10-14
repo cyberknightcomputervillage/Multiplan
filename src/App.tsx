@@ -11,7 +11,8 @@ import {
   User as UserIcon,
   ShieldCheck,
   Lock,
-  Phone
+  Phone,
+  ExternalLink
 } from 'lucide-react';
 import { User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
@@ -512,11 +513,27 @@ export default function App() {
         )}
       </main>
 
-      {/* Minimal Footer */}
-      <footer className="border-t border-neutral-800/80 bg-neutral-950 py-4 text-xs text-neutral-500 text-center pb-24 sm:pb-4">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Multiplan Center (ECS Computer City), New Elephant Road, Dhaka-1205 · 14 Floors Total</span>
-          <div className="flex items-center gap-3">
+      {/* Footer with Multiplan Directory link for DA & marketing */}
+      <footer className="border-t border-neutral-800/80 bg-neutral-950 py-5 text-xs text-neutral-400 text-center pb-24 sm:pb-5">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 flex-wrap justify-center md:justify-start">
+            <span className="text-neutral-300 font-medium">Multiplan Center (ECS Computer City)</span>
+            <span className="hidden sm:inline text-neutral-600">•</span>
+            <span>New Elephant Road, Dhaka-1205</span>
+            <span className="hidden sm:inline text-neutral-600">•</span>
+            <a
+              href="https://multiplanbd.net/shops/"
+              target="_blank"
+              rel="noopener"
+              title="Visit Multiplan Directory for complete shop listings"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg bg-neutral-900 hover:bg-neutral-850 active:bg-neutral-800 border border-neutral-800 hover:border-emerald-500/50 text-emerald-400 hover:text-emerald-300 font-semibold transition-all group touch-manipulation shadow-xs"
+            >
+              <span>Multiplan Directory</span>
+              <ExternalLink className="w-3.5 h-3.5 text-emerald-400/80 group-hover:text-emerald-300 group-hover:translate-x-0.5 transition-transform" />
+            </a>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 text-[11px] text-neutral-500">
             <span>Logged in as: <strong className="text-neutral-300 font-medium">{currentUser.email}</strong></span>
             {isAdmin && shops.length > 0 && (
               <button
@@ -530,7 +547,7 @@ export default function App() {
                     },
                   });
                 }}
-                className="text-[11px] text-neutral-500 hover:text-red-400 underline transition-colors cursor-pointer"
+                className="text-[11px] text-neutral-500 hover:text-red-400 underline transition-colors cursor-pointer py-1 touch-manipulation"
               >
                 Clear all database shops
               </button>
@@ -659,6 +676,28 @@ export default function App() {
                 <div className="font-semibold text-white">Role Access:</div>
                 <div>• <strong>Admin Panel (/admin)</strong>: Password-protected (`cyberknight`) for managing store records across all 14 floors.</div>
                 <div>• <strong>General Users</strong>: Search directory &amp; manage their own private purchase and sale records tied directly to their Google account.</div>
+              </div>
+
+              <div className="pt-1">
+                <a
+                  href="https://multiplanbd.net/shops/"
+                  target="_blank"
+                  rel="noopener"
+                  className="flex items-center justify-between p-3 rounded-xl bg-neutral-950 hover:bg-neutral-850 active:bg-neutral-800 border border-neutral-800 hover:border-emerald-500/50 text-neutral-200 transition-colors group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="w-4 h-4 text-emerald-400" />
+                    <div>
+                      <div className="text-xs font-semibold text-white group-hover:text-emerald-400 transition-colors">
+                        Multiplan Directory
+                      </div>
+                      <div className="text-[11px] text-neutral-400">
+                        multiplanbd.net/shops
+                      </div>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
+                </a>
               </div>
             </div>
 

@@ -201,14 +201,14 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                   : 'The directory is currently empty. Shops will appear here once added by the administrator.')
               : `No shops match ${selectedProductFilter ? `product "${selectedProductFilter}"` : ''}${selectedProductFilter && searchQuery ? ' and ' : ''}${searchQuery ? `query "${searchQuery}"` : ''}.`}
           </p>
-          <div className="mt-4 flex items-center justify-center gap-2">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
             {(selectedProductFilter || searchQuery) && (
               <button
                 onClick={() => {
                   setSelectedProductFilter(null);
                   setSearchQuery('');
                 }}
-                className="px-3.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                className="px-4 py-2 min-h-[38px] bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-neutral-200 rounded-xl text-xs font-medium transition-colors cursor-pointer touch-manipulation shadow-xs"
               >
                 Reset All Filters
               </button>
@@ -216,11 +216,21 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             {(isAdmin || canEditShop) && (
               <button
                 onClick={onNavigateToStoreInfo}
-                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 min-h-[38px] bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer touch-manipulation shadow-xs"
               >
                 Add New Shop
               </button>
             )}
+            <a
+              href="https://multiplanbd.net/shops/"
+              target="_blank"
+              rel="noopener"
+              title="Visit Multiplan Directory for complete shop listings"
+              className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[38px] bg-neutral-850 hover:bg-neutral-800 active:bg-neutral-750 text-emerald-400 hover:text-emerald-300 rounded-xl text-xs font-semibold border border-neutral-700/80 transition-colors cursor-pointer touch-manipulation shadow-xs"
+            >
+              <span>Multiplan Directory</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
         </div>
       ) : (
